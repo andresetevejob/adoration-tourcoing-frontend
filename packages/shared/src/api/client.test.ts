@@ -8,7 +8,12 @@ interface FakeResponseInit {
   jsonThrows?: boolean;
 }
 
-function fakeResponse({ status, body, statusText = "", jsonThrows = false }: FakeResponseInit): Response {
+function fakeResponse({
+  status,
+  body,
+  statusText = "",
+  jsonThrows = false,
+}: FakeResponseInit): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
@@ -143,7 +148,9 @@ describe("createApiClient", () => {
     });
 
     it("l'erreur levée est bien une instance d'ApiError", async () => {
-      fetchMock.mockResolvedValueOnce(fakeResponse({ status: 404, body: { code: "NOT_FOUND", message: "Absent" } }));
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ status: 404, body: { code: "NOT_FOUND", message: "Absent" } }),
+      );
       const client = createApiClient("http://api.test");
 
       await expect(client.get("/missing")).rejects.toBeInstanceOf(ApiError);
@@ -153,7 +160,9 @@ describe("createApiClient", () => {
   describe("401 et retry via /auth/refresh", () => {
     it("rejoue la requête une fois après un refresh réussi", async () => {
       fetchMock
-        .mockResolvedValueOnce(fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }))
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }),
+        )
         .mockResolvedValueOnce(fakeResponse({ status: 200, body: {} }))
         .mockResolvedValueOnce(fakeResponse({ status: 200, body: { id: "1" } }));
 
@@ -172,8 +181,12 @@ describe("createApiClient", () => {
 
     it("appelle onUnauthorized et lève l'erreur originale si le refresh échoue", async () => {
       fetchMock
-        .mockResolvedValueOnce(fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }))
-        .mockResolvedValueOnce(fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Refresh KO" } }));
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }),
+        )
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Refresh KO" } }),
+        );
 
       const onUnauthorized = vi.fn();
       const client = createApiClient("http://api.test", { onUnauthorized });
@@ -189,9 +202,13 @@ describe("createApiClient", () => {
 
     it("appelle onForbidden (pas onUnauthorized) et propage l'erreur de la relance quand le refresh réussit mais la relance échoue en 403", async () => {
       fetchMock
-        .mockResolvedValueOnce(fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }))
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }),
+        )
         .mockResolvedValueOnce(fakeResponse({ status: 200, body: {} }))
-        .mockResolvedValueOnce(fakeResponse({ status: 403, body: { code: "FORBIDDEN", message: "Interdit" } }));
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 403, body: { code: "FORBIDDEN", message: "Interdit" } }),
+        );
 
       const onUnauthorized = vi.fn();
       const onForbidden = vi.fn();
@@ -207,9 +224,12 @@ describe("createApiClient", () => {
       expect(fetchMock).toHaveBeenCalledTimes(3);
     });
 
-    it("ne tente pas de refresh quand skipAuthRetry est activé", async () => {
+    it("ne tente pas de refresh et n'appelle pas onUnauthorized quand skipAuthRetry est activé", async () => {
       fetchMock.mockResolvedValueOnce(
-        fakeResponse({ status: 401, body: { code: "BAD_CREDENTIALS", message: "Identifiants invalides" } }),
+        fakeResponse({
+          status: 401,
+          body: { code: "BAD_CREDENTIALS", message: "Identifiants invalides" },
+        }),
       );
       const onUnauthorized = vi.fn();
       const client = createApiClient("http://api.test", { onUnauthorized });
@@ -219,14 +239,18 @@ describe("createApiClient", () => {
       ).rejects.toMatchObject({ code: "BAD_CREDENTIALS", status: 401 });
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+      expect(onUnauthorized).not.toHaveBeenCalled();
     });
 
     it("ne plante pas quand aucun hook n'est fourni", async () => {
-      fetchMock.mockResolvedValueOnce(fakeResponse({ status: 401, body: { code: "X", message: "Y" } }));
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ status: 401, body: { code: "X", message: "Y" } }),
+      );
       const client = createApiClient("http://api.test");
 
-      await expect(client.post("/auth/login", {}, { skipAuthRetry: true })).rejects.toMatchObject({ code: "X" });
+      await expect(client.post("/auth/login", {}, { skipAuthRetry: true })).rejects.toMatchObject({
+        code: "X",
+      });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
@@ -239,8 +263,27 @@ describe("createApiClient", () => {
       const onForbidden = vi.fn();
       const client = createApiClient("http://api.test", { onForbidden });
 
-      await expect(client.delete("/admin/users/1")).rejects.toMatchObject({ code: "FORBIDDEN", status: 403 });
+      await expect(client.delete("/admin/users/1")).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        status: 403,
+      });
       expect(onForbidden).toHaveBeenCalledTimes(1);
+    });
+
+    it("n'appelle pas onForbidden quand skipForbiddenRedirect est activé, mais lève quand même l'ApiError", async () => {
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ status: 403, body: { code: "CANCELLATION_DEADLINE_EXCEEDED", message: "Délai dépassé" } }),
+      );
+      const onForbidden = vi.fn();
+      const client = createApiClient("http://api.test", { onForbidden });
+
+      await expect(
+        client.delete("/bookings/1", { skipForbiddenRedirect: true }),
+      ).rejects.toMatchObject({
+        code: "CANCELLATION_DEADLINE_EXCEEDED",
+        status: 403,
+      });
+      expect(onForbidden).not.toHaveBeenCalled();
     });
   });
 

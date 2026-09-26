@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTime, formatTime } from "./formatters";
+import { formatDate, formatDateTime, formatTime, toISODateString } from "./formatters";
 
 describe("formatDate", () => {
   it("formate une date d'été (CEST, UTC+2) en dd/MM/yyyy Europe/Paris", () => {
@@ -42,5 +42,21 @@ describe("formatTime", () => {
 
   it("applique le fuseau Europe/Paris", () => {
     expect(formatTime("2026-09-26T10:15:00Z")).toBe("12:15");
+  });
+});
+
+describe("toISODateString", () => {
+  it("formate une date en yyyy-MM-dd (fuseau Europe/Paris)", () => {
+    expect(toISODateString(new Date("2026-06-01T08:00:00Z"))).toBe("2026-06-01");
+  });
+
+  it("applique le fuseau Europe/Paris près de minuit (été, +2h)", () => {
+    // 2026-09-26T22:30:00Z -> 27/09/2026 00:30 à Paris (CEST, UTC+2)
+    expect(toISODateString(new Date("2026-09-26T22:30:00Z"))).toBe("2026-09-27");
+  });
+
+  it("applique le fuseau Europe/Paris près de minuit (hiver, +1h)", () => {
+    // 2026-01-15T23:30:00Z -> 16/01/2026 00:30 à Paris (CET, UTC+1)
+    expect(toISODateString(new Date("2026-01-15T23:30:00Z"))).toBe("2026-01-16");
   });
 });

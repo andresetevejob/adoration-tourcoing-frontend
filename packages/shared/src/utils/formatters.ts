@@ -37,3 +37,17 @@ export function formatDateTime(date: string | Date): string {
 export function formatTime(date: string | Date): string {
   return timeFormatter.format(toDate(date));
 }
+
+const isoDatePartFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Date au format ISO `yyyy-MM-dd` (fuseau Europe/Paris), pour les paramètres de requête
+ *  d'API attendant un `LocalDate` (`GET /planning?date=`) — distinct de `formatDate`
+ *  (`dd/MM/yyyy`, affichage FR uniquement, non réinjectable dans une requête). */
+export function toISODateString(date: Date): string {
+  return isoDatePartFormatter.format(date);
+}

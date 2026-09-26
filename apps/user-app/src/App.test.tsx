@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import App from "./App";
 
 describe("App (user-app)", () => {
-  it("se monte et résout les imports @chapelle/shared/ui et @chapelle/shared/utils", () => {
+  it("se monte et affiche la page d'accueil par défaut du routeur", async () => {
     render(<App />);
-    expect(screen.getByRole("button", { name: /Chapelle du Vœux — socle prêt/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /Chapelle du Vœux — Adoration Eucharistique/ }),
+    ).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ const REFRESH_PATH = "/auth/refresh";
 export interface RequestOptions {
   signal?: AbortSignal;
   skipAuthRetry?: boolean;
+  skipForbiddenRedirect?: boolean;
 }
 
 export interface ApiClientHooks {
@@ -63,7 +64,10 @@ async function parseErrorBody(response: Response): Promise<{ code: string; messa
       typeof (body as { code: unknown }).code === "string" &&
       typeof (body as { message: unknown }).message === "string"
     ) {
-      return { code: (body as { code: string }).code, message: (body as { message: string }).message };
+      return {
+        code: (body as { code: string }).code,
+        message: (body as { message: string }).message,
+      };
     }
   } catch {
     // corps non JSON ou vide : on retombe sur le statusText
@@ -103,14 +107,7 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
     if (!response.ok) {
       if (response.status === 401 && !options?.skipAuthRetry && !isRetry) {
         try {
-          await request(
-            "POST",
-            REFRESH_PATH,
-            undefined,
-            { skipAuthRetry: true },
-            false,
-            true,
-          );
+          await request("POST", REFRESH_PATH, undefined, { skipAuthRetry: true }, false, true);
         } catch {
           hooks?.onUnauthorized?.();
           const { code, message } = await parseErrorBody(response);
@@ -119,10 +116,10 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
         return await request<T>(method, path, body, options, true);
       }
 
-      if (response.status === 401 && !isInternalRefresh) {
+      if (response.status === 401 && !options?.skipAuthRetry && !isInternalRefresh) {
         hooks?.onUnauthorized?.();
       }
-      if (response.status === 403) {
+      if (response.status === 403 && !options?.skipForbiddenRedirect) {
         hooks?.onForbidden?.();
       }
 

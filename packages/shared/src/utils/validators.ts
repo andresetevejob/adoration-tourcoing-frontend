@@ -13,11 +13,7 @@ export const nomSchema = z.string().max(255);
 
 export const prenomsSchema = z.string().max(255);
 
-export const telephoneSchema = z
-  .string()
-  .regex(TELEPHONE_PATTERN)
-  .optional()
-  .or(z.literal(""));
+export const telephoneSchema = z.string().regex(TELEPHONE_PATTERN).optional().or(z.literal(""));
 
 export const roleSchema = z.nativeEnum(UserRole);
 
@@ -40,6 +36,13 @@ export const registerSchema = z
     message: "Les mots de passe ne correspondent pas",
     path: ["confirmPassword"],
   });
+
+export const updateProfileSchema = z.object({
+  email: emailSchema,
+  nom: nomSchema,
+  prenoms: prenomsSchema,
+  telephone: telephoneSchema,
+});
 
 export const bookingSchema = z
   .object({

@@ -1,10 +1,15 @@
-import { Button } from "@chapelle/shared/ui";
-import { cn } from "@chapelle/shared/utils";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "react-router";
+import { ToastProvider } from "@chapelle/shared/ui";
+import { queryClient } from "./lib/queryClient";
+import { router } from "./router";
 
 export default function App() {
   return (
-    <div className={cn("flex min-h-screen items-center justify-center bg-ivory")}>
-      <Button variant="primary">Chapelle du Vœux — socle prêt</Button>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </QueryClientProvider>
   );
 }

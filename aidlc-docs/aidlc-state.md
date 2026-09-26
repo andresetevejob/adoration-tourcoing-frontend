@@ -4,7 +4,7 @@
 - **Nom** : Réservation Adoration Eucharistique — Chapelle du Vœux (frontend)
 - **Type de projet** : Greenfield à partir d'un template de base existant (voir note ci-dessous)
 - **Date de début** : 2026-09-26
-- **Étape actuelle** : 🟢 CONSTRUCTION — Unité U0 (socle-frontend) terminée (conception, implémentation, tests, revue) → en attente de choix de l'unité suivante (U1 Authentification recommandée par l'ordre de dépendance)
+- **Étape actuelle** : 🟢 CONSTRUCTION — Unité U5 (gestion administrateurs) terminée (conception, implémentation, tests, revue) → en attente de choix de l'unité suivante (U6 Annonces recommandée par l'ordre de dépendance)
 - **Mode Construction** : session unique séquentielle, ordre choisi par l'utilisateur en commençant par U0
 - **Agents de Construction** : adaptés pour couvrir le frontend (cf. audit.md) ; `.claude/tech-stack.md` créé
 
@@ -33,11 +33,11 @@
 
 ### 🟢 PHASE DE CONSTRUCTION
 - [x] U0 — Fondation & Design System (socle-frontend) : conception, implémentation, tests (126 tests, couverture 96%+ shared / 100% apps), revue code-reviewer (1 bloquant + 2 mineurs corrigés) — terminée
-- [ ] U1 — Authentification (dépend de U0)
-- [ ] U2 — Agenda/Planning
-- [ ] U3 — Réservation/Annulation
-- [ ] U4 — Gestion utilisateurs
-- [ ] U5 — Gestion administrateurs
+- [x] U1 — Authentification & Comptes (dépend de U0) : conception (`u1-authentification-design.md`), correctif bloquant prérequis du bug `skipAuthRetry` dans `packages/shared/src/api/client.ts`, implémentation (routeur react-router, `authStore` Zustand+persist, câblage 401/403, formulaires connexion/inscription, profil, layouts admin/user), build + lint + tests OK (299 tests), revue code-reviewer (2 importants + 1 mineur corrigés : gestion d'erreur `useUpdateProfile`, robustesse `logout()` en cas d'échec réseau, typage `TError`) — terminée
+- [x] U2 — Agenda/Planning (dépend de U0, U1) : conception (`u2-agenda-planning-design.md`, versions FullCalendar figées à `6.1.21` après vérification npm — la v7 tout juste publiée aurait cassé le monorepo), implémentation (calendrier lecture seule en code-splitting, anonymisation user-app vs. identité complète admin-app, filtre "mes réservations"), build + lint + tests OK (349 tests), revue code-reviewer (0 bloquant, 1 important + 2 mineurs corrigés : gestion d'erreur réseau planning, libellé de rôle FR sur le badge admin, test de routeur `/planning`) — terminée
+- [x] U3 — Réservation/Annulation (dépend de U0, U1, U2) : conception (`u3-reservation-annulation-design.md`, extension du contrat calendrier U2 via `onSelectSlot`/`onEventClick`, `@fullcalendar/interaction` figé à `6.1.21`, correctif préventif `skipForbiddenRedirect` ajouté à `packages/shared/src/api/client.ts` avant implémentation), implémentation (flux réservation en deux étapes formulaire→confirmation, règle d'annulation ≥24h Veilleur uniquement, sélecteur de bénéficiaire admin), build + lint + tests OK (409 tests), revue code-reviewer (0 bloquant, 0 important, 1 mineur documentaire corrigé : affirmation inexacte sur l'usage de `bookingSchema`) — terminée
+- [x] U4 — Gestion utilisateurs (dépend de U0, U1 ; admin-app uniquement) : conception (`u4-gestion-utilisateurs-design.md`, restriction structurelle sur les comptes Administrateur/SuperAdministrateur appliquée à trois niveaux — filtrage `useUsers`, `roleOptions` de `UserForm`, garde `isManageableRole` sur `/utilisateurs/:id`), implémentation (CRUD utilisateurs, validation/rejet de compte, `UserForm` réutilisable en vue de U5), build + lint + tests OK (474 tests), revue code-reviewer (0 bloquant, 0 important, 1 mineur corrigé : test d'intégration routeur `/` manquant) — terminée
+- [x] U5 — Gestion administrateurs (dépend de U0, U1, U4 ; admin-app, SuperAdministrateur uniquement) : conception (`u5-gestion-administrateurs-design.md`, scope strict rôle `ADMINISTRATEUR` seul — jamais `SUPERADMINISTRATEUR` —, réutilisation de `UserForm`/`ConfirmActionModal`/CRUD de U4, extension additive rétrocompatible de `UserTable` via `renderRowActions`), implémentation (`AdminsListPage`/`AdminCreatePage`, `useAdmins` modelé sur `useVeilleurs`), build + lint + tests OK (491 tests), revue code-reviewer (0 bloquant, 0 important, 1 mineur corrigé : test verrouillant la transmission de `ADMIN_ROLE_OPTIONS` aux pages) — terminée
 - [ ] U6 — Annonces
 - [ ] U7 — Contact
 - [ ] U8 — Vitrine/Accès

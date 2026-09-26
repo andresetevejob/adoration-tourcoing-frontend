@@ -10,6 +10,7 @@ import {
   registerSchema,
   roleSchema,
   telephoneSchema,
+  updateProfileSchema,
 } from "./validators";
 
 describe("emailSchema", () => {
@@ -129,6 +130,53 @@ describe("registerSchema", () => {
 
   it("accepte un téléphone vide", () => {
     expect(registerSchema.safeParse({ ...base, telephone: "" }).success).toBe(true);
+  });
+});
+
+describe("updateProfileSchema", () => {
+  const base = {
+    email: "adorateur@example.com",
+    nom: "Dupont",
+    prenoms: "Jean",
+    telephone: "0612345678",
+  };
+
+  it("valide un profil complet cohérent", () => {
+    expect(updateProfileSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("accepte un téléphone vide (champ optionnel)", () => {
+    expect(updateProfileSchema.safeParse({ ...base, telephone: "" }).success).toBe(true);
+  });
+
+  it("n'exige ni password ni confirmPassword ni role", () => {
+    const result = updateProfileSchema.safeParse(base);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("password");
+      expect(result.data).not.toHaveProperty("role");
+    }
+  });
+
+  it("rejette un email invalide", () => {
+    const result = updateProfileSchema.safeParse({ ...base, email: "pas-un-email" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path[0] === "email")).toBe(true);
+    }
+  });
+
+  it("rejette un nom de plus de 255 caractères", () => {
+    const result = updateProfileSchema.safeParse({ ...base, nom: "a".repeat(256) });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejette un téléphone mal formé", () => {
+    const result = updateProfileSchema.safeParse({ ...base, telephone: "abc123" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path[0] === "telephone")).toBe(true);
+    }
   });
 });
 

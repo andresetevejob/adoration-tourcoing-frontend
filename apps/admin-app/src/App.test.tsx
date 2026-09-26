@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import App from "./App";
 
 describe("App (admin-app)", () => {
-  it("se monte et résout les imports @chapelle/shared/ui et @chapelle/shared/utils", () => {
+  it("se monte et redirige vers la connexion en l'absence de session", async () => {
     render(<App />);
-    expect(screen.getByRole("button", { name: /Administration — socle prêt/ })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Connexion/ })).toBeInTheDocument();
   });
 });
