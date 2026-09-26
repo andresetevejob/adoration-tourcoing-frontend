@@ -1,0 +1,20 @@
+services:
+  user-app:
+    build:
+      context: .
+      dockerfile: apps/user-app/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8085/api/v1
+        VITE_APP_NAME: "Adoration Chapelle du Vœux"
+    ports:
+      - "3000:80"
+
+  admin-app:
+    build:
+      context: .
+      dockerfile: apps/admin-app/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8085/api/v1
+        VITE_APP_NAME: "Adoration Chapelle du Vœux — Administration"
+    ports:
+      - "3001:80"
