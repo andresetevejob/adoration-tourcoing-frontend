@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ConfirmActionModal } from "./ConfirmActionModal";
 
-describe("components/users/ConfirmActionModal (admin-app)", () => {
+describe("components/common/ConfirmActionModal (admin-app)", () => {
   it("n'affiche rien quand isOpen est false", () => {
     render(
       <ConfirmActionModal

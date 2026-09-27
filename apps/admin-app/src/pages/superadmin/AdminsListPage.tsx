@@ -8,7 +8,7 @@ import { useDeleteUser } from "../../hooks/useDeleteUser";
 import { ADMIN_ROLE_OPTIONS } from "../../lib/adminRoles";
 import { UserTable } from "../../components/users/UserTable";
 import { UserForm } from "../../components/users/UserForm";
-import { ConfirmActionModal } from "../../components/users/ConfirmActionModal";
+import { ConfirmActionModal } from "../../components/common/ConfirmActionModal";
 
 /** `ProtectedRoute allowedRoles={[SUPERADMINISTRATEUR]}` (`router.tsx`, U1) garantit déjà
  * l'accès : pas de garde de rôle supplémentaire à ajouter ici, ni de `useAuth()` nécessaire. */

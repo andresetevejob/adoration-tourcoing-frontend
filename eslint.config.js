@@ -11,6 +11,7 @@ export default tseslint.config(
       "**/coverage",
       "**/playwright-report",
       "**/legacy-template/**",
+      "**/public/mockServiceWorker.js",
     ],
   },
   {

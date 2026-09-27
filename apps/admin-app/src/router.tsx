@@ -9,9 +9,11 @@ import PageMonCompte from "./pages/PageMonCompte";
 import PagePlanning from "./pages/PagePlanning";
 import Page403 from "./pages/Page403";
 import Page404 from "./pages/Page404";
-import PagePlaceholder from "./pages/PagePlaceholder";
 import PageGestionUtilisateurs from "./pages/PageGestionUtilisateurs";
 import PageDetailUtilisateur from "./pages/PageDetailUtilisateur";
+import PageAnnonces from "./pages/PageAnnonces";
+import PageAnnonceCreation from "./pages/PageAnnonceCreation";
+import PageAnnonceEdition from "./pages/PageAnnonceEdition";
 import AdminsListPage from "./pages/superadmin/AdminsListPage";
 import AdminCreatePage from "./pages/superadmin/AdminCreatePage";
 
@@ -57,7 +59,7 @@ export const router = createBrowserRouter([
         path: "/annonces",
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
-            <PagePlaceholder title="Annonces" /> {/* U6 */}
+            <PageAnnonces />
           </ProtectedRoute>
         ),
       },
@@ -65,7 +67,7 @@ export const router = createBrowserRouter([
         path: "/annonces/nouveau",
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
-            <PagePlaceholder title="Nouvelle annonce" /> {/* U6 */}
+            <PageAnnonceCreation />
           </ProtectedRoute>
         ),
       },
@@ -73,7 +75,7 @@ export const router = createBrowserRouter([
         path: "/annonces/:id",
         element: (
           <ProtectedRoute allowedRoles={ADMIN_ROLES}>
-            <PagePlaceholder title="Édition annonce" /> {/* U6 */}
+            <PageAnnonceEdition />
           </ProtectedRoute>
         ),
       },

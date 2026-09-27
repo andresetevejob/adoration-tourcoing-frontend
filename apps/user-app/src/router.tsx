@@ -10,6 +10,7 @@ import PageInscription from "./pages/PageInscription";
 import PageConfirmationInscription from "./pages/PageConfirmationInscription";
 import PageMonCompte from "./pages/PageMonCompte";
 import PageAgenda from "./pages/PageAgenda";
+import PageActualites from "./pages/PageActualites";
 import Page403 from "./pages/Page403";
 import Page404 from "./pages/Page404";
 import PagePlaceholder from "./pages/PagePlaceholder";
@@ -23,7 +24,7 @@ export const router = createBrowserRouter([
       { path: "/inscription", element: <PageInscription /> },
       { path: "/inscription/confirmation", element: <PageConfirmationInscription /> },
       { path: "/agenda", element: <PageAgenda /> },
-      { path: "/actualites", element: <PagePlaceholder title="Actualités" /> }, // U6
+      { path: "/actualites", element: <PageActualites /> },
       { path: "/qui-sommes-nous", element: <PagePlaceholder title="Qui sommes-nous ?" /> }, // U8
       { path: "/contact", element: <PagePlaceholder title="Contact" /> }, // U7
       { path: "/non-autorise", element: <Page403 /> },

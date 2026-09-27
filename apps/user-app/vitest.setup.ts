@@ -1,5 +1,7 @@
-import { expect } from "vitest";
+import { afterAll, afterEach, beforeAll, expect } from "vitest";
 import * as matchers from "@testing-library/jest-dom/matchers";
+import { server } from "@chapelle/shared/mocks/server";
+import { resetAnnoncesStore } from "@chapelle/shared/mocks/handlers";
 
 // Note d'infrastructure de test : `@testing-library/jest-dom` est hoisté à la racine
 // du monorepo alors que `vitest` reste installé localement dans chaque workspace
@@ -20,3 +22,18 @@ declare module "vitest" {
   interface AsymmetricMatchersContaining
     extends matchers.TestingLibraryMatchers<unknown, unknown> {}
 }
+
+/** Serveur MSW global (annonces, U6) : `onUnhandledRequest: "error"` sans risque de
+ *  régression sur les tests U0-U5 (ceux-ci mockent `apiClient` via `vi.mock("../client")`,
+ *  le `fetch` réel n'est jamais invoqué). Seuls les nouveaux tests de cette unité
+ *  (hooks/pages consommant `apiClient` sans le mocker) transitent réellement par MSW. */
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: "error" });
+});
+afterEach(() => {
+  server.resetHandlers();
+  resetAnnoncesStore();
+});
+afterAll(() => {
+  server.close();
+});

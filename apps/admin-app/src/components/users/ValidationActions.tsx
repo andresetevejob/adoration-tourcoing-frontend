@@ -3,7 +3,7 @@ import { StatutValidation, type UserResponse } from "@chapelle/shared/types";
 import { Button } from "@chapelle/shared/ui";
 import { useValiderUser } from "../../hooks/useValiderUser";
 import { useRejeterUser } from "../../hooks/useRejeterUser";
-import { ConfirmActionModal } from "./ConfirmActionModal";
+import { ConfirmActionModal } from "../common/ConfirmActionModal";
 
 export interface ValidationActionsProps {
   user: UserResponse;

@@ -9,7 +9,7 @@ import { isManageableRole, MANAGEABLE_ROLE_OPTIONS } from "../lib/manageableRole
 import { UserProfile } from "../components/users/UserProfile";
 import { ValidationActions } from "../components/users/ValidationActions";
 import { UserForm } from "../components/users/UserForm";
-import { ConfirmActionModal } from "../components/users/ConfirmActionModal";
+import { ConfirmActionModal } from "../components/common/ConfirmActionModal";
 
 /** `ProtectedRoute`/`ADMIN_ROLES` (`router.tsx`) garantissent déjà l'accès : pas de
  * garde de rôle supplémentaire à ajouter ici, ni de `useAuth()` nécessaire. */

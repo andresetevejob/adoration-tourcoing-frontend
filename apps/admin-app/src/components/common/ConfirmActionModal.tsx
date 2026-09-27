@@ -12,9 +12,10 @@ export interface ConfirmActionModalProps {
 }
 
 /**
- * Seul composant réellement générique du module `UserManagementModule` (cf. conception
- * U4 §6.5) : réutilisé par `ValidationActions` (valider/rejeter) et par
- * `PageDetailUtilisateur` (suppression) — trois usages, un seul composant.
+ * Composant générique, déplacé de `components/users/` vers `components/common/` (U6
+ * §9.4) : réutilisé par `ValidationActions`/`PageDetailUtilisateur`/`AdminsListPage`
+ * (module utilisateurs) et par `AnnonceList` (module annonces), hors de tout module
+ * fonctionnel unique.
  */
 export function ConfirmActionModal({
   isOpen,
