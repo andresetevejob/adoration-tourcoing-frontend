@@ -1,10 +1,10 @@
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter } from "react-router";
 import { UserRole } from "@chapelle/shared/types";
+import { Spinner } from "@chapelle/shared/ui";
 import { setNavigate } from "./lib/navigation";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import PublicLayout from "./components/layout/PublicLayout";
-import AppLayout from "./components/layout/AppLayout";
-import PageAccueil from "./pages/PageAccueil";
 import PageConnexion from "./pages/PageConnexion";
 import PageInscription from "./pages/PageInscription";
 import PageConfirmationInscription from "./pages/PageConfirmationInscription";
@@ -14,27 +14,31 @@ import PageActualites from "./pages/PageActualites";
 import PageContact from "./pages/PageContact";
 import Page403 from "./pages/Page403";
 import Page404 from "./pages/Page404";
-import PagePlaceholder from "./pages/PagePlaceholder";
+
+/** Pages vitrine (U8) volumineuses (contenu statique dense, galerie, `AdorationLive`) et
+ *  peu susceptibles d'être visitées en enchaînement immédiat depuis les autres routes :
+ *  en code-splitting pour respecter le budget de bundle initial (< 150 Ko gzip/app, NFR
+ *  Performance) que leur ajout dépassait sinon — même mécanisme (`lazy`+`Suspense`) que
+ *  `CalendrierReservations` dans `PageAgenda`, appliqué ici à l'échelle de la page entière. */
+const PageAccueil = lazy(() => import("./pages/PageAccueil"));
+const PageQuiSommesNous = lazy(() => import("./pages/PageQuiSommesNous"));
+
+function withSuspense(element: ReactNode) {
+  return <Suspense fallback={<Spinner size="lg" />}>{element}</Suspense>;
+}
 
 export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
-      { path: "/", element: <PageAccueil /> },
+      { path: "/", element: withSuspense(<PageAccueil />) },
       { path: "/connexion", element: <PageConnexion /> },
       { path: "/inscription", element: <PageInscription /> },
       { path: "/inscription/confirmation", element: <PageConfirmationInscription /> },
       { path: "/agenda", element: <PageAgenda /> },
       { path: "/actualites", element: <PageActualites /> },
-      { path: "/qui-sommes-nous", element: <PagePlaceholder title="Qui sommes-nous ?" /> }, // U8
+      { path: "/qui-sommes-nous", element: withSuspense(<PageQuiSommesNous />) },
       { path: "/contact", element: <PageContact /> },
-      { path: "/non-autorise", element: <Page403 /> },
-      { path: "*", element: <Page404 /> },
-    ],
-  },
-  {
-    element: <AppLayout />,
-    children: [
       {
         path: "/mon-compte",
         element: (
@@ -43,6 +47,8 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      { path: "/non-autorise", element: <Page403 /> },
+      { path: "*", element: <Page404 /> },
     ],
   },
 ]);

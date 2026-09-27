@@ -27,14 +27,14 @@ describe("router (user-app) — test de fumée", () => {
     });
   });
 
-  it("rend la page d'accueil sur '/'", async () => {
+  it("rend la page d'accueil (U8) sur '/'", async () => {
     await act(async () => {
       await router.navigate("/");
     });
     renderRouter();
 
     expect(
-      await screen.findByRole("heading", { name: /Chapelle du Vœux — Adoration Eucharistique/ }),
+      await screen.findByRole("heading", { name: /Un cœur qui bat/, level: 1 }),
     ).toBeInTheDocument();
   });
 
@@ -74,7 +74,7 @@ describe("router (user-app) — test de fumée", () => {
     expect(await screen.findByRole("heading", { name: "Agenda" })).toBeInTheDocument();
   });
 
-  it("rend toujours un placeholder sur une route hors périmètre U1/U2 (ex. /actualites)", async () => {
+  it("rend PageActualites (U6) sur '/actualites'", async () => {
     await act(async () => {
       await router.navigate("/actualites");
     });
@@ -89,7 +89,16 @@ describe("router (user-app) — test de fumée", () => {
     });
     renderRouter();
 
-    expect(await screen.findByRole("heading", { name: "Contact" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Contact", level: 1 })).toBeInTheDocument();
+  });
+
+  it("rend PageQuiSommesNous (U8) sur '/qui-sommes-nous'", async () => {
+    await act(async () => {
+      await router.navigate("/qui-sommes-nous");
+    });
+    renderRouter();
+
+    expect(await screen.findByRole("heading", { name: "Qui sommes-nous ?", level: 1 })).toBeInTheDocument();
   });
 
   it("ProtectedRoute bloque l'accès non authentifié à /mon-compte et redirige vers /connexion", async () => {

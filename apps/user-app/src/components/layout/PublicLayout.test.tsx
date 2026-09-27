@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 vi.mock("../../hooks/useAuth");
 
 describe("components/layout/PublicLayout (user-app)", () => {
-  it("rend AuthNav et l'Outlet des routes enfants", () => {
+  it("rend Navbar (site + AuthNav), l'Outlet des routes enfants et Footer (chargé en différé)", async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       role: null,
@@ -29,6 +29,8 @@ describe("components/layout/PublicLayout (user-app)", () => {
     );
 
     expect(screen.getByRole("link", { name: "Connexion" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Actualités" })).toBeInTheDocument();
     expect(screen.getByText("Contenu de la page")).toBeInTheDocument();
+    expect(await screen.findByText(/Chapelle du Vœux · Tous droits réservés/)).toBeInTheDocument();
   });
 });

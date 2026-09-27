@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, expect } from "vitest";
+import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { server } from "@chapelle/shared/mocks/server";
 import { resetAnnoncesStore } from "@chapelle/shared/mocks/handlers";
@@ -12,6 +12,12 @@ import { resetAnnoncesStore } from "@chapelle/shared/mocks/handlers";
 // le `vitest` local du workspace, pour que ce soit bien le même singleton `expect` que
 // celui utilisé dans les fichiers de test.
 expect.extend(matchers);
+
+// jsdom n'implémente pas `window.scrollTo` (cf. https://github.com/jsdom/jsdom/issues/2557) :
+// `ScrollToTop` (U8, monté par `PublicLayout` sur toutes les routes) l'appelle au montage
+// et à chaque changement de route — sans ce stub, chaque test qui rend une page via le
+// routeur émettrait un warning "Not implemented" bruyant sur stderr.
+window.scrollTo = vi.fn();
 
 declare module "vitest" {
   // Fusion de déclaration TypeScript (TS2428) : le corps vide et le paramètre par défaut
