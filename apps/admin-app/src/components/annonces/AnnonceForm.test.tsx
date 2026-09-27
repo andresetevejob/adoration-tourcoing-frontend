@@ -55,17 +55,25 @@ describe("components/annonces/AnnonceForm (admin-app)", () => {
     const defaultValues = { titre: "Titre existant", contenu: "Contenu existant", datePublication: "2026-01-01" };
 
     it("pré-remplit les champs avec defaultValues", () => {
-      render(<AnnonceForm mode="edit" defaultValues={defaultValues} isSubmitting={false} onSubmit={vi.fn()} />);
+      render(
+        <AnnonceForm mode="edit" defaultValues={defaultValues} isSubmitting={false} onSubmit={vi.fn()} onCancel={vi.fn()} />,
+      );
 
       expect(screen.getByLabelText<HTMLInputElement>("Titre").value).toBe("Titre existant");
-      expect(screen.getByLabelText<HTMLInputElement>("Contenu").value).toBe("Contenu existant");
+      expect(screen.getByLabelText<HTMLTextAreaElement>("Contenu").value).toBe("Contenu existant");
       expect(screen.getByLabelText<HTMLInputElement>("Date de publication").value).toBe("2026-01-01");
     });
 
     it("appelle onSubmit avec un Partial<AnnonceCreateRequest> modifié", async () => {
       const onSubmit = vi.fn();
       render(
-        <AnnonceForm mode="edit" defaultValues={defaultValues} isSubmitting={false} onSubmit={onSubmit} />,
+        <AnnonceForm
+          mode="edit"
+          defaultValues={defaultValues}
+          isSubmitting={false}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+        />,
       );
 
       fireEvent.change(screen.getByLabelText("Titre"), { target: { value: "Titre modifié" } });
@@ -80,10 +88,20 @@ describe("components/annonces/AnnonceForm (admin-app)", () => {
       });
     });
 
-    it("n'affiche pas de bouton Annuler quand onCancel n'est pas fourni", () => {
-      render(<AnnonceForm mode="edit" defaultValues={defaultValues} isSubmitting={false} onSubmit={vi.fn()} />);
+    it("appelle onCancel au clic sur Annuler", () => {
+      const onCancel = vi.fn();
+      render(
+        <AnnonceForm
+          mode="edit"
+          defaultValues={defaultValues}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={onCancel}
+        />,
+      );
 
-      expect(screen.queryByRole("button", { name: "Annuler" })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
+      expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
 });

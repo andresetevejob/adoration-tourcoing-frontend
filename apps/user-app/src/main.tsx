@@ -16,10 +16,14 @@ async function prepareMocks(): Promise<void> {
   await worker.start({ onUnhandledRequest: "bypass" });
 }
 
-void prepareMocks().then(() => {
-  createRoot(rootElement).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
-});
+void prepareMocks()
+  .catch((error: unknown) => {
+    console.error("Échec du démarrage du worker MSW (mode développement) :", error);
+  })
+  .then(() => {
+    createRoot(rootElement).render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+  });

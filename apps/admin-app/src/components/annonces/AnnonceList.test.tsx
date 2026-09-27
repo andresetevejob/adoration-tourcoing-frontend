@@ -64,19 +64,20 @@ describe("components/annonces/AnnonceList (admin-app)", () => {
     expect(onDelete).toHaveBeenCalledWith(annonces[0]);
   });
 
-  it("désactive le bouton Publier/Dépublier de la ligne en cours de bascule (isTogglingId)", () => {
+  it("désactive uniquement le bouton Publier/Dépublier de la ligne en cours de bascule (togglingIds)", () => {
     render(
       <AnnonceList
-        annonces={[annonces[1]]}
+        annonces={annonces}
         isLoading={false}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onTogglePublication={vi.fn()}
-        isTogglingId="a2"
+        togglingIds={new Set(["a2"])}
       />,
     );
 
     expect(screen.getByRole("button", { name: /Dépublier/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Publier/ })).not.toBeDisabled();
   });
 
   it("affiche le message vide quand la liste est vide", () => {

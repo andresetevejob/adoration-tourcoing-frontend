@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { AnnonceCreateRequest } from "@chapelle/shared/types";
-import { Button, Input } from "@chapelle/shared/ui";
+import { Button, Input, Textarea } from "@chapelle/shared/ui";
 
 export type AnnonceFormProps =
   | {
@@ -16,7 +16,7 @@ export type AnnonceFormProps =
       defaultValues: { titre: string; contenu: string; datePublication: string };
       isSubmitting: boolean;
       onSubmit: (dto: Partial<AnnonceCreateRequest>) => void;
-      onCancel?: () => void;
+      onCancel: () => void;
     };
 
 /** Schéma local, non partagé (structure propre à ce formulaire, même choix que
@@ -70,7 +70,7 @@ function CreateAnnonceForm({ isSubmitting, onSubmit, onCancel }: CreateAnnonceFo
       noValidate
     >
       <Input label="Titre" error={errors.titre?.message} {...register("titre")} />
-      <Input label="Contenu" error={errors.contenu?.message} {...register("contenu")} />
+      <Textarea label="Contenu" error={errors.contenu?.message} {...register("contenu")} />
       <Input
         label="Date de publication"
         type="date"
@@ -113,7 +113,7 @@ function EditAnnonceForm({ defaultValues, isSubmitting, onSubmit, onCancel }: Ed
       noValidate
     >
       <Input label="Titre" error={errors.titre?.message} {...register("titre")} />
-      <Input label="Contenu" error={errors.contenu?.message} {...register("contenu")} />
+      <Textarea label="Contenu" error={errors.contenu?.message} {...register("contenu")} />
       <Input
         label="Date de publication"
         type="date"
@@ -121,11 +121,9 @@ function EditAnnonceForm({ defaultValues, isSubmitting, onSubmit, onCancel }: Ed
         {...register("datePublication")}
       />
       <div className="flex justify-end gap-3">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Annuler
-          </Button>
-        )}
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Annuler
+        </Button>
         <Button type="submit" isLoading={isSubmitting}>
           Enregistrer
         </Button>

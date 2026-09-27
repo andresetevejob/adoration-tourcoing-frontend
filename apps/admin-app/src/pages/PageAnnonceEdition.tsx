@@ -50,6 +50,7 @@ export default function PageAnnonceEdition() {
       </Link>
       <Card title="Modifier l'annonce">
         <AnnonceForm
+          key={id}
           mode="edit"
           defaultValues={{
             titre: annonce.titre,

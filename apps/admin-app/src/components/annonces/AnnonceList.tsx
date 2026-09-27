@@ -9,7 +9,7 @@ export interface AnnonceListProps {
   onEdit: (annonce: AnnonceResponse) => void;
   onDelete: (annonce: AnnonceResponse) => void;
   onTogglePublication: (annonce: AnnonceResponse) => void;
-  isTogglingId?: string;
+  togglingIds?: ReadonlySet<string>;
 }
 
 /** `Table` exige `T extends Record<string, unknown>` ; `AnnonceResponse` n'a pas d'index signature. */
@@ -21,7 +21,7 @@ export function AnnonceList({
   onEdit,
   onDelete,
   onTogglePublication,
-  isTogglingId,
+  togglingIds,
 }: AnnonceListProps) {
   const columns: TableColumn<AnnonceRow>[] = [
     { key: "titre", header: "Titre" },
@@ -44,7 +44,7 @@ export function AnnonceList({
           <Button
             size="sm"
             variant="primary"
-            isLoading={isTogglingId === row.id}
+            isLoading={togglingIds?.has(row.id) ?? false}
             onClick={() => {
               onTogglePublication(row);
             }}

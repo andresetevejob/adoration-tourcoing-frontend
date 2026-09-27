@@ -14,6 +14,7 @@ import { ConfirmActionModal } from "../components/common/ConfirmActionModal";
 export default function PageAnnonces() {
   const navigate = useNavigate();
   const [deletingAnnonce, setDeletingAnnonce] = useState<AnnonceResponse | null>(null);
+  const [togglingIds, setTogglingIds] = useState<ReadonlySet<string>>(new Set());
   const annoncesQuery = useAnnonces();
   const deleteAnnonce = useDeleteAnnonce();
   const publishAnnonce = usePublishAnnonce();
@@ -25,6 +26,25 @@ export default function PageAnnonces() {
         setDeletingAnnonce(null);
       },
     });
+  }
+
+  function handleTogglePublication(annonce: AnnonceResponse): void {
+    setTogglingIds((ids) => new Set(ids).add(annonce.id));
+    publishAnnonce.mutate(
+      {
+        id: annonce.id,
+        statut: annonce.statut === StatutAnnonce.PUBLIE ? StatutAnnonce.DEPUBLIE : StatutAnnonce.PUBLIE,
+      },
+      {
+        onSettled: () => {
+          setTogglingIds((ids) => {
+            const next = new Set(ids);
+            next.delete(annonce.id);
+            return next;
+          });
+        },
+      },
+    );
   }
 
   return (
@@ -51,13 +71,8 @@ export default function PageAnnonces() {
             void navigate(`/annonces/${annonce.id}`);
           }}
           onDelete={setDeletingAnnonce}
-          onTogglePublication={(annonce) => {
-            publishAnnonce.mutate({
-              id: annonce.id,
-              statut: annonce.statut === StatutAnnonce.PUBLIE ? StatutAnnonce.DEPUBLIE : StatutAnnonce.PUBLIE,
-            });
-          }}
-          isTogglingId={publishAnnonce.isPending ? publishAnnonce.variables.id : undefined}
+          onTogglePublication={handleTogglePublication}
+          togglingIds={togglingIds}
         />
       )}
       <ConfirmActionModal

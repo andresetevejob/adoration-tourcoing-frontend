@@ -18,7 +18,11 @@ export default function PageActualites() {
 
   const annonces = annoncesQuery.data ?? [];
   const totalPages = Math.ceil(annonces.length / ITEMS_PER_PAGE);
-  const displayedAnnonces = annonces.slice(page * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE + ITEMS_PER_PAGE);
+  const currentPage = totalPages === 0 ? 0 : Math.min(page, totalPages - 1);
+  const displayedAnnonces = annonces.slice(
+    currentPage * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE,
+  );
 
   return (
     <main>
@@ -83,7 +87,7 @@ export default function PageActualites() {
                 ))}
               </div>
               <div className="mt-16">
-                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
               </div>
             </>
           )}
