@@ -58,3 +58,12 @@ export const annoncesHandlers: HttpHandler[] = [
     return HttpResponse.json(updated);
   }),
 ];
+
+/** Sans état (contrairement à `annoncesHandlers`) : US-CONTACT-01 ne décrit qu'un envoi,
+ *  aucun récit ne demande de relire les messages envoyés — pas de `contactStore.ts`.
+ *  Pas de validation du corps de la requête côté mock : même choix que `/annonces`
+ *  (§4 du plan U6, point ouvert 4) — `ContactForm` (Zod) est l'unique point d'entrée
+ *  de cette mutation, aucune revalidation "serveur" redondante. */
+export const contactHandlers: HttpHandler[] = [
+  http.post("*/contact", () => new HttpResponse(null, { status: 204 })),
+];

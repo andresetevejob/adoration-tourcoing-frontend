@@ -1,4 +1,4 @@
 import { setupServer } from "msw/node";
-import { annoncesHandlers } from "./handlers";
+import { annoncesHandlers, contactHandlers } from "./handlers";
 
-export const server: ReturnType<typeof setupServer> = setupServer(...annoncesHandlers);
+export const server: ReturnType<typeof setupServer> = setupServer(...annoncesHandlers, ...contactHandlers);

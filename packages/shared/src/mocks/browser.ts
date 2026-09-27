@@ -1,4 +1,4 @@
 import { setupWorker } from "msw/browser";
-import { annoncesHandlers } from "./handlers";
+import { annoncesHandlers, contactHandlers } from "./handlers";
 
-export const worker: ReturnType<typeof setupWorker> = setupWorker(...annoncesHandlers);
+export const worker: ReturnType<typeof setupWorker> = setupWorker(...annoncesHandlers, ...contactHandlers);

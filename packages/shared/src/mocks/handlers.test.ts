@@ -2,9 +2,9 @@ import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { StatutAnnonce, type AnnonceCreateRequest, type AnnonceResponse } from "../types/annonce";
 import type { ApiErrorPayload } from "../types/common";
-import { annoncesHandlers, resetAnnoncesStore } from "./handlers";
+import { annoncesHandlers, contactHandlers, resetAnnoncesStore } from "./handlers";
 
-const server = setupServer(...annoncesHandlers);
+const server = setupServer(...annoncesHandlers, ...contactHandlers);
 const BASE_URL = "http://test.local/api/v1";
 
 beforeAll(() => {
@@ -112,6 +112,18 @@ describe("mocks/handlers — /annonces", () => {
   it("POST /annonces/:id/publier retourne 404 si l'id est inconnu", async () => {
     const response = await fetch(`${BASE_URL}/annonces/inconnu/publier`, { method: "POST" });
     expect(response.status).toBe(404);
+  });
+});
+
+describe("mocks/handlers — /contact", () => {
+  it("POST /contact retourne 204 sans corps", async () => {
+    const response = await fetch(`${BASE_URL}/contact`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nom: "Jean", email: "jean@test.fr", sujet: "info", message: "Bonjour" }),
+    });
+
+    expect(response.status).toBe(204);
   });
 });
 

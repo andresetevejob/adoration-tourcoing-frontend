@@ -83,6 +83,15 @@ describe("router (user-app) — test de fumée", () => {
     expect(await screen.findByRole("heading", { name: "Actualités" })).toBeInTheDocument();
   });
 
+  it("rend PageContact (U7) sur '/contact'", async () => {
+    await act(async () => {
+      await router.navigate("/contact");
+    });
+    renderRouter();
+
+    expect(await screen.findByRole("heading", { name: "Contact" })).toBeInTheDocument();
+  });
+
   it("ProtectedRoute bloque l'accès non authentifié à /mon-compte et redirige vers /connexion", async () => {
     await act(async () => {
       await router.navigate("/mon-compte");
