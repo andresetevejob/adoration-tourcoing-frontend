@@ -1,2 +1,6 @@
 @import "tailwindcss";
+/* packages/shared est hors de la racine Vite de cette app : sans ce @source,
+   Tailwind ne scanne pas ses .tsx et les classes qui n'apparaissent que là
+   ne sont jamais générées. Ne pas supprimer malgré l'@import ci-dessous. */
+@source "../../../packages/shared/src";
 @import "../../../packages/shared/src/ui/theme.css";
