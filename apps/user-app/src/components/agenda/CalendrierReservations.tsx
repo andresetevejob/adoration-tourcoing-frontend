@@ -6,15 +6,44 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import type { PlanningEntryResponse } from "@chapelle/shared/types";
 import { Spinner } from "@chapelle/shared/ui";
+import { diffJoursInclusif } from "@chapelle/shared/utils";
+import type { PlanningPeriode } from "../../hooks/planningPeriode";
 import { mapPlanningEntriesToEvents } from "./planningEntries";
 import { renderPlanningEvent } from "./renderPlanningEvent";
 
 export interface CalendrierReservationsProps {
-  date: string; // yyyy-MM-dd, sert d'`initialDate` FullCalendar
+  periode: PlanningPeriode; // pilote la vue FullCalendar affichée (jour/mois/intervalle)
   entries: PlanningEntryResponse[]; // déjà filtrées ("mes réservations" éventuel) par l'appelant
   isLoading: boolean; // premier chargement (query.isLoading) — pas isFetching
   onSelectSlot?: (info: DateSelectArg) => void; // U3 : absent = lecture seule (comportement U2 inchangé)
   onEventClick?: (info: EventClickArg) => void; // U3 : absent = clic sans effet
+}
+
+/** Résout la vue FullCalendar (plugin/`initialView`/`initialDate`) selon le mode de la
+ *  période sélectionnée. La vue "intervalle" est calquée sur `dayGrid` avec une durée
+ *  dynamique égale au nombre de jours sélectionnés (bornes incluses). */
+function resolveCalendarConfig(periode: PlanningPeriode) {
+  switch (periode.mode) {
+    case "jour":
+      return { initialView: "timeGridDay", initialDate: periode.date, views: undefined };
+    case "mois":
+      return {
+        initialView: "dayGridMonth",
+        initialDate: `${String(periode.annee)}-${String(periode.mois).padStart(2, "0")}-01`,
+        views: undefined,
+      };
+    case "intervalle":
+      return {
+        initialView: "dayGridIntervalle",
+        initialDate: periode.dateDebut,
+        views: {
+          dayGridIntervalle: {
+            type: "dayGrid",
+            duration: { days: diffJoursInclusif(periode.dateDebut, periode.dateFin) },
+          },
+        },
+      };
+  }
 }
 
 /**
@@ -27,7 +56,7 @@ export interface CalendrierReservationsProps {
  * (frontière de code-splitting, NFR performance).
  */
 export default function CalendrierReservations({
-  date,
+  periode,
   entries,
   isLoading,
   onSelectSlot,
@@ -44,8 +73,7 @@ export default function CalendrierReservations({
   return (
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-      initialView="timeGridDay"
-      initialDate={date}
+      {...resolveCalendarConfig(periode)}
       locale={frLocale}
       headerToolbar={false}
       height="auto"

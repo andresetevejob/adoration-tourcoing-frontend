@@ -3,11 +3,13 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import { UserRole, type PageResponse, type PlanningEntryResponse } from "@chapelle/shared/types";
-import { getPlanning } from "../api/endpoints/planning";
+import { getPlanning, getPlanningIntervalle, getPlanningMensuel } from "../api/endpoints/planning";
 import { usePlanning } from "./usePlanning";
 
 vi.mock("../api/endpoints/planning", () => ({
   getPlanning: vi.fn(),
+  getPlanningMensuel: vi.fn(),
+  getPlanningIntervalle: vi.fn(),
 }));
 
 function entry(id: string): PlanningEntryResponse {
@@ -24,6 +26,17 @@ function entry(id: string): PlanningEntryResponse {
   };
 }
 
+function pageOf(id: string): PageResponse<PlanningEntryResponse> {
+  return {
+    content: [entry(id)],
+    page: 0,
+    size: 20,
+    totalElements: 1,
+    totalPages: 1,
+    last: true,
+  };
+}
+
 function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
@@ -34,39 +47,84 @@ describe("hooks/usePlanning (user-app)", () => {
     vi.clearAllMocks();
   });
 
-  it("interroge getPlanning avec la date fournie, page 0 et DEFAULT_PAGE_SIZE", async () => {
-    const page: PageResponse<PlanningEntryResponse> = {
-      content: [entry("e1")],
-      page: 0,
-      size: 20,
-      totalElements: 1,
-      totalPages: 1,
-      last: true,
-    };
-    vi.mocked(getPlanning).mockResolvedValueOnce(page);
+  it("mode jour : interroge getPlanning avec la date fournie, page 0 et DEFAULT_PAGE_SIZE", async () => {
+    vi.mocked(getPlanning).mockResolvedValueOnce(pageOf("e1"));
 
-    const { result } = renderHook(() => usePlanning({ date: "2026-01-01" }), { wrapper });
+    const { result } = renderHook(() => usePlanning({ mode: "jour", date: "2026-01-01" }), { wrapper });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
     expect(getPlanning).toHaveBeenCalledWith({ date: "2026-01-01", page: 0, size: 20 });
-    expect(result.current.data).toBe(page);
+    expect(getPlanningMensuel).not.toHaveBeenCalled();
+    expect(getPlanningIntervalle).not.toHaveBeenCalled();
+  });
+
+  it("mode mois : interroge getPlanningMensuel avec l'année et le mois fournis, aucun autre endpoint", async () => {
+    vi.mocked(getPlanningMensuel).mockResolvedValueOnce(pageOf("e2"));
+
+    const { result } = renderHook(() => usePlanning({ mode: "mois", annee: 2026, mois: 3 }), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(getPlanningMensuel).toHaveBeenCalledWith({ annee: 2026, mois: 3 });
+    expect(getPlanning).not.toHaveBeenCalled();
+    expect(getPlanningIntervalle).not.toHaveBeenCalled();
+  });
+
+  it("mode intervalle : interroge getPlanningIntervalle avec les bornes fournies, aucun autre endpoint", async () => {
+    vi.mocked(getPlanningIntervalle).mockResolvedValueOnce(pageOf("e3"));
+
+    const { result } = renderHook(
+      () => usePlanning({ mode: "intervalle", dateDebut: "2026-01-01", dateFin: "2026-01-10" }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(getPlanningIntervalle).toHaveBeenCalledWith({ dateDebut: "2026-01-01", dateFin: "2026-01-10" });
+    expect(getPlanning).not.toHaveBeenCalled();
+    expect(getPlanningMensuel).not.toHaveBeenCalled();
   });
 
   it("interroge sans garde d'authentification (aucun `enabled` bloquant)", () => {
-    vi.mocked(getPlanning).mockResolvedValueOnce({
-      content: [],
-      page: 0,
-      size: 20,
-      totalElements: 0,
-      totalPages: 0,
-      last: true,
-    });
+    vi.mocked(getPlanning).mockResolvedValueOnce(pageOf("e1"));
 
-    renderHook(() => usePlanning({ date: "2026-01-01" }), { wrapper });
+    renderHook(() => usePlanning({ mode: "jour", date: "2026-01-01" }), { wrapper });
 
     expect(getPlanning).toHaveBeenCalledWith({ date: "2026-01-01", page: 0, size: 20 });
+  });
+
+  it("la queryKey reflète periodeCacheKey : un cache distinct par mode/période", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    function wrapperWithClient({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    vi.mocked(getPlanning).mockResolvedValueOnce(pageOf("e-jour"));
+    vi.mocked(getPlanningMensuel).mockResolvedValueOnce(pageOf("e-mois"));
+
+    const jourHook = renderHook(() => usePlanning({ mode: "jour", date: "2026-01-01" }), {
+      wrapper: wrapperWithClient,
+    });
+    await waitFor(() => {
+      expect(jourHook.result.current.isSuccess).toBe(true);
+    });
+
+    const moisHook = renderHook(() => usePlanning({ mode: "mois", annee: 2026, mois: 3 }), {
+      wrapper: wrapperWithClient,
+    });
+    await waitFor(() => {
+      expect(moisHook.result.current.isSuccess).toBe(true);
+    });
+
+    expect(queryClient.getQueryData<PageResponse<PlanningEntryResponse>>(["planning", "jour:2026-01-01"])
+      ?.content[0].id).toBe("e-jour");
+    expect(queryClient.getQueryData<PageResponse<PlanningEntryResponse>>(["planning", "mois:2026-03"])
+      ?.content[0].id).toBe("e-mois");
   });
 });

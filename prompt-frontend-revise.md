@@ -613,6 +613,10 @@ info:
 servers:
 - url: http://localhost:8085
   description: Generated server url
+tags:
+- name: Planning
+  description: Consultation du planning d'adoration — par jour, par mois, ou sur
+    un intervalle libre
 paths:
   /api/v1/users/{id}:
     get:
@@ -636,6 +640,14 @@ paths:
     put:
       tags:
       - user-controller
+      summary: Modifier un compte (profil et/ou role)
+      description: 'Deux Content-Type acceptes sur ce meme endpoint : application/json
+        (comportement historique, methode update, sans photo) et multipart/form-data
+        (methode updateWithPhoto, photo transportee en dehors du DTO). La photo
+        est exigee uniquement si le role resultant du compte est VEILLEUR et qu''aucune
+        photo n''existe deja en base (target.photo == null) ; une photo deja presente
+        peut etre remplacee via ce meme chemin multipart. Voir epic1-inscription-photo-veilleur-design.md
+        §5.'
       operationId: update
       parameters:
       - name: id
@@ -649,6 +661,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequestMultipart'
         required: true
       responses:
         '200':
@@ -657,6 +672,26 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Role resultant VEILLEUR sans photo (ni existante, ni fournie),
+            ou photo fournie dont le type reel detecte (Apache Tika) n'est ni jpeg
+            ni png, ou taille residuelle > 5 Mo
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Photo envoyee depassant la taille maximale autorisee (transport)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Content-Type ni application/json ni multipart/form-data
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       tags:
       - user-controller
@@ -671,6 +706,51 @@ paths:
       responses:
         '204':
           description: No Content
+  /api/v1/users/{id}/photo:
+    get:
+      tags:
+      - user-controller
+      summary: Consulter la photo d'un compte
+      description: 'Contenu binaire de la photo de profil (VEILLEUR), jamais un
+        nom de fichier : le nom reel n''est jamais recu depuis le client, il est
+        relu depuis User.photo en base. Acces authentifie, meme autorisation que
+        GET /api/v1/users/{id} (titulaire du compte ou administrateur ; un ADMINISTRATEUR
+        ne peut pas consulter un compte ADMINISTRATEUR/SUPERADMINISTRATEUR). Voir
+        epic1-inscription-photo-veilleur-design.md §4.'
+      operationId: getPhoto
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Photo retournee
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Appelant ni titulaire ni administrateur, ou ADMINISTRATEUR
+            consultant un compte ADMINISTRATEUR/SUPERADMINISTRATEUR
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Compte inconnu, ou compte sans photo, ou fichier reference
+            en base mais absent du disque
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/users:
     get:
       tags:
@@ -729,12 +809,20 @@ paths:
     post:
       tags:
       - user-controller
+      summary: Creer un compte (ADMINISTRATEUR/SUPERADMINISTRATEUR)
+      description: 'Deux Content-Type acceptes sur ce meme endpoint : application/json
+        (comportement historique, methode create, sans photo) et multipart/form-data
+        (methode createWithPhoto, photo transportee en dehors du DTO, obligatoire
+        si role=VEILLEUR). Voir epic1-inscription-photo-veilleur-design.md §3.'
       operationId: create
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequestMultipart'
         required: true
       responses:
         '201':
@@ -743,6 +831,26 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Role VEILLEUR demande sans photo, ou photo fournie dont le
+            type reel detecte (Apache Tika) n'est ni jpeg ni png, ou taille residuelle
+            > 5 Mo
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Photo envoyee depassant la taille maximale autorisee (transport)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Content-Type ni application/json ni multipart/form-data
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/users/{id}/valider:
     post:
       tags:
@@ -838,12 +946,20 @@ paths:
     post:
       tags:
       - auth-controller
+      summary: Inscription publique (ADORATEUR ou VEILLEUR)
+      description: 'Deux Content-Type acceptes sur ce meme endpoint : application/json
+        (comportement historique, methode register, sans photo) et multipart/form-data
+        (methode registerWithPhoto, photo transportee en dehors du DTO, obligatoire
+        si role=VEILLEUR). Voir epic1-inscription-photo-veilleur-design.md §2.'
       operationId: register
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestMultipart'
         required: true
       responses:
         '201':
@@ -852,6 +968,26 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Role VEILLEUR demande sans photo, ou photo fournie dont le
+            type reel detecte (Apache Tika) n'est ni jpeg ni png, ou taille residuelle
+            > 5 Mo
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Photo envoyee depassant la taille maximale autorisee (transport)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '415':
+          description: Content-Type ni application/json ni multipart/form-data
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/auth/refresh:
     post:
       tags:
@@ -889,11 +1025,25 @@ paths:
   /api/v1/planning:
     get:
       tags:
-      - planning-controller
+      - Planning
+      summary: Consulter le planning d'un jour donné
+      description: Retourne les créneaux d'adoration actifs (statut EFFECTUEE, non
+        supprimés) dont l'intervalle chevauche la journée demandée. Accès public,
+        sans authentification requise. Le contenu identitaire de chaque entrée (idUtilisateur,
+        nomUtilisateur, prenomsUtilisateur, roleUtilisateur) est anonymisé (mis à
+        null, flag estAnonymise=true) sauf pour un appelant ADMINISTRATEUR/SUPERADMINISTRATEUR
+        (identité toujours en clair) ou pour un VEILLEUR consultant son propre créneau
+        (identité en clair uniquement sur cette entrée). Un appelant anonyme ou
+        ADORATEUR reçoit systématiquement une vue intégralement anonymisée. Les
+        champs dateDebut, dateFin, description et estArchivee restent toujours
+        visibles, que l'entrée soit anonymisée ou non.
       operationId: getPlanning
       parameters:
       - name: date
         in: query
+        description: 'Date du jour à consulter, format ISO yyyy-MM-dd. Optionnel
+          : si absent, le planning de la date du jour (fuseau Europe/Paris) est
+          retourné.'
         required: false
         schema:
           type: string
@@ -905,11 +1055,140 @@ paths:
           $ref: '#/components/schemas/Pageable'
       responses:
         '200':
-          description: OK
+          description: Planning du jour retourné (éventuellement vide)
           content:
             '*/*':
               schema:
                 $ref: '#/components/schemas/PageResponsePlanningEntryResponse'
+        '400':
+          description: Paramètre 'date' fourni mais malformé (format non conforme
+            à yyyy-MM-dd)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/planning/mensuel:
+    get:
+      tags:
+      - Planning
+      summary: Consulter le planning d'un mois donné
+      description: 'Retourne les créneaux d''adoration actifs dont l''intervalle
+        chevauche le mois demandé (fenêtre du 1er jour du mois inclus au 1er jour
+        du mois suivant exclu). Accès public, sans authentification requise. Mêmes
+        règles d''anonymisation RGPD que GET /api/v1/planning : identité en clair
+        uniquement pour ADMINISTRATEUR/SUPERADMINISTRATEUR ou pour le titulaire
+        consultant son propre créneau, anonymisée dans tous les autres cas (y compris
+        appelant anonyme ou ADORATEUR).'
+      operationId: getPlanningMensuel
+      parameters:
+      - name: annee
+        in: query
+        description: 'Année du mois à consulter, entre 2000 et 2100. Optionnel
+          : si ''annee'' et ''mois'' sont tous deux absents, le mois courant est
+          utilisé par défaut. Doit être fourni conjointement avec ''mois'' (fournir
+          un seul des deux déclenche une erreur 422).'
+        required: false
+        schema:
+          maximum: 2100
+          minimum: 2000
+          type: integer
+          format: int32
+      - name: mois
+        in: query
+        description: 'Mois à consulter, entre 1 et 12. Optionnel : si ''annee''
+          et ''mois'' sont tous deux absents, le mois courant est utilisé par défaut.
+          Doit être fourni conjointement avec ''annee'' (fournir un seul des deux
+          déclenche une erreur 422).'
+        required: false
+        schema:
+          maximum: 12
+          minimum: 1
+          type: integer
+          format: int32
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: Planning du mois retourné (éventuellement vide)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageResponsePlanningEntryResponse'
+        '400':
+          description: Paramètre 'annee' ou 'mois' hors bornes techniques (annee
+            hors [2000, 2100], mois hors [1, 12]) ou de type invalide
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: 'Règle métier violée : ''annee'' fourni sans ''mois'', ou
+            ''mois'' fourni sans ''annee'' (les deux doivent être fournis ensemble,
+            ou aucun des deux)'
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/planning/intervalle:
+    get:
+      tags:
+      - Planning
+      summary: Consulter le planning sur un intervalle libre
+      description: 'Retourne les créneaux d''adoration actifs dont l''intervalle
+        chevauche la fenêtre [dateDebut, dateFin] demandée, bornes toutes deux incluses.
+        Accès public, sans authentification requise. Mêmes règles d''anonymisation
+        RGPD que GET /api/v1/planning : identité en clair uniquement pour ADMINISTRATEUR/SUPERADMINISTRATEUR
+        ou pour le titulaire consultant son propre créneau, anonymisée dans tous
+        les autres cas (y compris appelant anonyme ou ADORATEUR).'
+      operationId: getPlanningIntervalle
+      parameters:
+      - name: dateDebut
+        in: query
+        description: Date de début de l'intervalle, format ISO yyyy-MM-dd, incluse.
+          Obligatoire, aucune valeur par défaut.
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: dateFin
+        in: query
+        description: Date de fin de l'intervalle, format ISO yyyy-MM-dd, incluse.
+          Obligatoire, aucune valeur par défaut. Doit être postérieure ou égale
+          à 'dateDebut', et l'intervalle [dateDebut, dateFin] ne doit pas dépasser
+          31 jours.
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: Planning de l'intervalle retourné (éventuellement vide)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageResponsePlanningEntryResponse'
+        '400':
+          description: Paramètre 'dateDebut' ou 'dateFin' absent (les deux sont
+            obligatoires) ou malformé (format non conforme à yyyy-MM-dd)
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: 'Règle métier violée : ''dateFin'' antérieure à ''dateDebut'',
+            ou intervalle demandé dépassant 31 jours'
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/bookings/{id}:
     get:
       tags:
@@ -945,6 +1224,25 @@ paths:
           description: No Content
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
     UpdateUserRequest:
       required:
       - email
@@ -974,6 +1272,42 @@ components:
           - VEILLEUR
           - ADMINISTRATEUR
           - SUPERADMINISTRATEUR
+    UpdateUserRequestMultipart:
+      required:
+      - email
+      - nom
+      - prenoms
+      type: object
+      properties:
+        email:
+          type: string
+        nom:
+          maxLength: 255
+          minLength: 0
+          type: string
+        prenoms:
+          maxLength: 255
+          minLength: 0
+          type: string
+        telephone:
+          maxLength: 255
+          minLength: 0
+          pattern: ^$|^\+?[0-9]{10,15}$
+          type: string
+        role:
+          type: string
+          enum:
+          - ADORATEUR
+          - VEILLEUR
+          - ADMINISTRATEUR
+          - SUPERADMINISTRATEUR
+        photo:
+          type: string
+          format: binary
+          description: Obligatoire uniquement si le role resultant est VEILLEUR
+            et qu'aucune photo n'existe deja en base ; sinon optionnelle (remplace
+            la photo existante si fournie). Type reel detecte via Apache Tika (jpeg
+            ou png uniquement), 5 Mo maximum.
     UserResponse:
       type: object
       properties:
@@ -1001,6 +1335,12 @@ components:
           - EN_ATTENTE
           - VALIDE
           - REJETE
+        photo:
+          type: string
+          description: Nom du fichier stocke sur le serveur (jamais un chemin complet
+            ni le nom original du fichier envoye), null si aucune photo. A utiliser
+            uniquement pour savoir si une photo existe ; le contenu binaire se recupere
+            via GET /api/v1/users/{id}/photo.
         dateCreation:
           type: string
           format: date-time
@@ -1040,6 +1380,47 @@ components:
           - VEILLEUR
           - ADMINISTRATEUR
           - SUPERADMINISTRATEUR
+    CreateUserRequestMultipart:
+      required:
+      - email
+      - nom
+      - password
+      - prenoms
+      - role
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          maxLength: 2147483647
+          minLength: 8
+          pattern: ^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$
+          type: string
+        nom:
+          maxLength: 255
+          minLength: 0
+          type: string
+        prenoms:
+          maxLength: 255
+          minLength: 0
+          type: string
+        telephone:
+          maxLength: 255
+          minLength: 0
+          pattern: ^$|^\+?[0-9]{10,15}$
+          type: string
+        role:
+          type: string
+          enum:
+          - ADORATEUR
+          - VEILLEUR
+          - ADMINISTRATEUR
+          - SUPERADMINISTRATEUR
+        photo:
+          type: string
+          format: binary
+          description: Obligatoire si role=VEILLEUR. Type reel detecte via Apache
+            Tika (jpeg ou png uniquement), 5 Mo maximum.
     CreateBookingRequest:
       required:
       - dateDebut
@@ -1128,6 +1509,47 @@ components:
           - VEILLEUR
           - ADMINISTRATEUR
           - SUPERADMINISTRATEUR
+    RegisterRequestMultipart:
+      required:
+      - email
+      - nom
+      - password
+      - prenoms
+      - role
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          maxLength: 2147483647
+          minLength: 8
+          pattern: ^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$
+          type: string
+        nom:
+          maxLength: 255
+          minLength: 0
+          type: string
+        prenoms:
+          maxLength: 255
+          minLength: 0
+          type: string
+        telephone:
+          maxLength: 255
+          minLength: 0
+          pattern: ^$|^\+?[0-9]{10,15}$
+          type: string
+        role:
+          type: string
+          enum:
+          - ADORATEUR
+          - VEILLEUR
+          - ADMINISTRATEUR
+          - SUPERADMINISTRATEUR
+        photo:
+          type: string
+          format: binary
+          description: Obligatoire si role=VEILLEUR. Type reel detecte via Apache
+            Tika (jpeg ou png uniquement), 5 Mo maximum.
     AuthResponse:
       type: object
       properties:

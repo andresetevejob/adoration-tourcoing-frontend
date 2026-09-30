@@ -13,6 +13,7 @@ import { usePlanning } from "../hooks/usePlanning";
 import { useCreateBooking } from "../hooks/useCreateBooking";
 import { useCancelBooking } from "../hooks/useCancelBooking";
 import { useVeilleurs } from "../hooks/useVeilleurs";
+import type { PlanningPeriode } from "../hooks/planningPeriode";
 
 vi.mock("../hooks/usePlanning");
 vi.mock("../hooks/useCreateBooking");
@@ -20,7 +21,7 @@ vi.mock("../hooks/useCancelBooking");
 vi.mock("../hooks/useVeilleurs");
 
 interface CalendrierStubProps {
-  date: string;
+  periode: PlanningPeriode;
   entries: PlanningEntryResponse[];
   isLoading: boolean;
   onSelectSlot?: (info: DateSelectArg) => void;
@@ -28,9 +29,9 @@ interface CalendrierStubProps {
 }
 
 vi.mock("../components/planning/CalendrierPlanningAdmin", () => ({
-  default: ({ date, entries, isLoading, onSelectSlot, onEventClick }: CalendrierStubProps) => (
+  default: ({ periode, entries, isLoading, onSelectSlot, onEventClick }: CalendrierStubProps) => (
     <div data-testid="calendrier-stub">
-      <span data-testid="date">{date}</span>
+      <span data-testid="date">{periode.mode === "jour" ? periode.date : ""}</span>
       <span data-testid="loading">{String(isLoading)}</span>
       <ul>
         {entries.map((entry) => (
@@ -245,8 +246,8 @@ describe("pages/PagePlanning (admin-app)", () => {
     expect(mutate).toHaveBeenCalledWith(
       {
         idUtilisateur: undefined,
-        dateDebut: "2026-06-01T10:00:00.000Z",
-        dateFin: "2026-06-01T11:00:00.000Z",
+        dateDebut: "2026-06-01T12:00:00+02:00",
+        dateFin: "2026-06-01T13:00:00+02:00",
         description: "Test",
       },
       expect.anything(),
@@ -272,8 +273,8 @@ describe("pages/PagePlanning (admin-app)", () => {
     expect(mutate).toHaveBeenCalledWith(
       {
         idUtilisateur: "v1",
-        dateDebut: "2026-06-01T10:00:00.000Z",
-        dateFin: "2026-06-01T11:00:00.000Z",
+        dateDebut: "2026-06-01T12:00:00+02:00",
+        dateFin: "2026-06-01T13:00:00+02:00",
         description: "Test",
       },
       expect.anything(),

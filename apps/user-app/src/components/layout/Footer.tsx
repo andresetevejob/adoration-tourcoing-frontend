@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
 
 const footerSections = [
   {
@@ -56,6 +57,11 @@ const socialLinks = [
  *  conception U8 §4) — à remplacer avant mise en production par le contenu réel de la
  *  Chapelle du Vœux (Tourcoing), même statut que `PageContact` (U7). */
 export function Footer() {
+  const { isAuthenticated } = useAuth();
+  const visibleFooterSections = isAuthenticated
+    ? footerSections.filter((section) => section.title !== "Compte")
+    : footerSections;
+
   return (
     <footer className="relative bg-night-950 text-ivory/80 overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
@@ -67,7 +73,9 @@ export function Footer() {
         }}
       />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+        <div
+          className={`grid grid-cols-1 md:grid-cols-2 ${isAuthenticated ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-12 lg:gap-8`}
+        >
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/20">
@@ -91,7 +99,7 @@ export function Footer() {
               lumière.
             </p>
           </div>
-          {footerSections.map((section) => (
+          {visibleFooterSections.map((section) => (
             <div key={section.title}>
               <h4 className="text-gold-400 font-serif text-base font-semibold tracking-wide mb-4">
                 {section.title}

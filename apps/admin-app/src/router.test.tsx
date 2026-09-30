@@ -17,6 +17,16 @@ const admin: UserResponse = {
   dateCreation: "2026-01-01T00:00:00Z",
 };
 
+const adorateur: UserResponse = {
+  id: "u1",
+  email: "adorateur@example.com",
+  nom: "Dupont",
+  prenoms: "Jean",
+  role: UserRole.ADORATEUR,
+  statutValidation: StatutValidation.VALIDE,
+  dateCreation: "2026-01-01T00:00:00Z",
+};
+
 function renderRouter() {
   // `/planning` (protégée) monte réellement `usePlanning` (TanStack Query) : un
   // `QueryClientProvider` est nécessaire ici, comme dans `App.tsx`.
@@ -101,6 +111,32 @@ describe("router (admin-app) — test de fumée", () => {
       await router.navigate("/non-autorise");
     });
     renderRouter();
+
+    expect(await screen.findByRole("heading", { name: "Accès non autorisé" })).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige un administrateur déjà authentifié loin de /connexion vers /", async () => {
+    useAuthStore.getState().setUser(admin);
+    await act(async () => {
+      await router.navigate("/connexion");
+    });
+    act(() => {
+      renderRouter();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Gestion des utilisateurs" }),
+    ).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige vers /non-autorise un utilisateur authentifié avec un rôle non prévu pour l'app", async () => {
+    useAuthStore.getState().setUser(adorateur);
+    await act(async () => {
+      await router.navigate("/connexion");
+    });
+    act(() => {
+      renderRouter();
+    });
 
     expect(await screen.findByRole("heading", { name: "Accès non autorisé" })).toBeInTheDocument();
   });

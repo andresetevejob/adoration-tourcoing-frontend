@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { UserRole } from "@chapelle/shared/types";
 import { setNavigate } from "./lib/navigation";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { GuestRoute } from "./components/auth/GuestRoute";
 import PublicLayout from "./components/layout/PublicLayout";
 import AdminLayout from "./components/layout/AdminLayout";
 import PageConnexion from "./pages/PageConnexion";
@@ -23,7 +24,14 @@ export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
-      { path: "/connexion", element: <PageConnexion /> },
+      {
+        path: "/connexion",
+        element: (
+          <GuestRoute>
+            <PageConnexion />
+          </GuestRoute>
+        ),
+      },
       { path: "/non-autorise", element: <Page403 /> },
       { path: "*", element: <Page404 /> },
     ],

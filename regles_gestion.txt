@@ -1,0 +1,7 @@
+1 - demander la photo du veilleur à l'inscription
+2 - Les heures auxquelles on ne peut pas faire adoration
+
+tous les jours de 7h à 09h pas possible de faire adoration (Lundi au samedi)
+chapelet : vendredi de 16 à 17h00
+Pas adoration dimanche (7h à 10h)
+

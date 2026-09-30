@@ -4,6 +4,7 @@ import { UserRole } from "@chapelle/shared/types";
 import { Spinner } from "@chapelle/shared/ui";
 import { setNavigate } from "./lib/navigation";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { GuestRoute } from "./components/auth/GuestRoute";
 import PublicLayout from "./components/layout/PublicLayout";
 import PageConnexion from "./pages/PageConnexion";
 import PageInscription from "./pages/PageInscription";
@@ -32,9 +33,30 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { path: "/", element: withSuspense(<PageAccueil />) },
-      { path: "/connexion", element: <PageConnexion /> },
-      { path: "/inscription", element: <PageInscription /> },
-      { path: "/inscription/confirmation", element: <PageConfirmationInscription /> },
+      {
+        path: "/connexion",
+        element: (
+          <GuestRoute>
+            <PageConnexion />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/inscription",
+        element: (
+          <GuestRoute>
+            <PageInscription />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/inscription/confirmation",
+        element: (
+          <GuestRoute>
+            <PageConfirmationInscription />
+          </GuestRoute>
+        ),
+      },
       { path: "/agenda", element: <PageAgenda /> },
       { path: "/actualites", element: <PageActualites /> },
       { path: "/qui-sommes-nous", element: withSuspense(<PageQuiSommesNous />) },

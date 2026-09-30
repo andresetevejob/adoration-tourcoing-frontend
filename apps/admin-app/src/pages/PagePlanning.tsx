@@ -2,8 +2,9 @@ import { lazy, Suspense, useState } from "react";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import type { CreateBookingRequest, PlanningEntryResponse } from "@chapelle/shared/types";
 import { Spinner } from "@chapelle/shared/ui";
-import { toISODateString } from "@chapelle/shared/utils";
+import { toISODateString, toParisISOString } from "@chapelle/shared/utils";
 import { usePlanning } from "../hooks/usePlanning";
+import { periodeCacheKey, type PlanningPeriode } from "../hooks/planningPeriode";
 import { useCreateBooking } from "../hooks/useCreateBooking";
 import { useCancelBooking } from "../hooks/useCancelBooking";
 import { useVeilleurs } from "../hooks/useVeilleurs";
@@ -18,12 +19,15 @@ const CalendrierPlanningAdmin = lazy(() => import("../components/planning/Calend
 /** `ProtectedRoute`/`ADMIN_ROLES` (`router.tsx`) garantissent déjà l'accès : pas de
  * garde de rôle supplémentaire à ajouter ici, ni de `useAuth()` nécessaire. */
 export default function PagePlanning() {
-  const [date, setDate] = useState(() => toISODateString(new Date()));
+  const [periode, setPeriode] = useState<PlanningPeriode>(() => ({
+    mode: "jour",
+    date: toISODateString(new Date()),
+  }));
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [pendingCreateDto, setPendingCreateDto] = useState<CreateBookingRequest | null>(null);
   const [pendingBeneficiaireLabel, setPendingBeneficiaireLabel] = useState("Moi-même");
   const [bookingToCancel, setBookingToCancel] = useState<PlanningEntryResponse | null>(null);
-  const planningQuery = usePlanning({ date });
+  const planningQuery = usePlanning(periode);
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
   const veilleursQuery = useVeilleurs();
@@ -31,7 +35,7 @@ export default function PagePlanning() {
   const entries = planningQuery.data?.content ?? [];
 
   function onSelectSlot(info: DateSelectArg): void {
-    setSelectedSlot({ start: info.start.toISOString(), end: info.end.toISOString() });
+    setSelectedSlot({ start: toParisISOString(info.start), end: toParisISOString(info.end) });
   }
 
   // Aucune vérification `isMine` (contrairement à `PageAgenda`) : l'Administrateur peut
@@ -84,7 +88,7 @@ export default function PagePlanning() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <h1 className="font-serif text-2xl font-semibold text-night-900">Planning</h1>
-      <FiltreDatePlanning value={date} onChange={setDate} />
+      <FiltreDatePlanning value={periode} onChange={setPeriode} />
       {planningQuery.isError ? (
         <p role="alert" className="text-sm text-red-600">
           Impossible de charger le planning. Veuillez réessayer plus tard.
@@ -92,8 +96,8 @@ export default function PagePlanning() {
       ) : (
         <Suspense fallback={<Spinner size="lg" />}>
           <CalendrierPlanningAdmin
-            key={date}
-            date={date}
+            key={periodeCacheKey(periode)}
+            periode={periode}
             entries={entries}
             isLoading={planningQuery.isLoading}
             onSelectSlot={onSelectSlot}

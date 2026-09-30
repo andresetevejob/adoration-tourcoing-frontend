@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { API_TIMEOUT_MS, DEFAULT_PAGE_SIZE, PASSWORD_MIN_LENGTH, TELEPHONE_PATTERN } from "./constants";
+import {
+  API_TIMEOUT_MS,
+  DEFAULT_PAGE_SIZE,
+  MAX_INTERVALLE_JOURS,
+  PASSWORD_MIN_LENGTH,
+  TELEPHONE_PATTERN,
+} from "./constants";
 
 describe("constants", () => {
   it("expose les valeurs attendues (non-régression)", () => {
     expect(API_TIMEOUT_MS).toBe(15000);
     expect(DEFAULT_PAGE_SIZE).toBe(20);
     expect(PASSWORD_MIN_LENGTH).toBe(8);
+    expect(MAX_INTERVALLE_JOURS).toBe(31);
   });
 
   describe("TELEPHONE_PATTERN", () => {

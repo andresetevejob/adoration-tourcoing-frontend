@@ -3,9 +3,10 @@ import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import type { CreateBookingRequest, PlanningEntryResponse } from "@chapelle/shared/types";
 import { UserRole } from "@chapelle/shared/types";
 import { Spinner } from "@chapelle/shared/ui";
-import { toISODateString } from "@chapelle/shared/utils";
+import { toISODateString, toParisISOString } from "@chapelle/shared/utils";
 import { useAuth } from "../hooks/useAuth";
 import { usePlanning } from "../hooks/usePlanning";
+import { periodeCacheKey, type PlanningPeriode } from "../hooks/planningPeriode";
 import { useCreateBooking } from "../hooks/useCreateBooking";
 import { useCancelBooking } from "../hooks/useCancelBooking";
 import { filterOwnEntries } from "../components/agenda/planningEntries";
@@ -21,13 +22,16 @@ const CalendrierReservations = lazy(() => import("../components/agenda/Calendrie
 /** Route publique (`PublicLayout`, non protégée) : `useAuth()` fonctionne indifféremment
  * connecté/non connecté, `usePlanning` n'a pas de garde `enabled` (`GET /planning` est public). */
 export default function PageAgenda() {
-  const [date, setDate] = useState(() => toISODateString(new Date()));
+  const [periode, setPeriode] = useState<PlanningPeriode>(() => ({
+    mode: "jour",
+    date: toISODateString(new Date()),
+  }));
   const [mesReservationsUniquement, setMesReservationsUniquement] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [pendingCreateDto, setPendingCreateDto] = useState<CreateBookingRequest | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<PlanningEntryResponse | null>(null);
   const { role, user } = useAuth();
-  const planningQuery = usePlanning({ date });
+  const planningQuery = usePlanning(periode);
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
 
@@ -41,7 +45,7 @@ export default function PageAgenda() {
   const onSelectSlot =
     role === UserRole.VEILLEUR && !mesReservationsUniquement
       ? (info: DateSelectArg) => {
-          setSelectedSlot({ start: info.start.toISOString(), end: info.end.toISOString() });
+          setSelectedSlot({ start: toParisISOString(info.start), end: toParisISOString(info.end) });
         }
       : undefined;
 
@@ -97,7 +101,7 @@ export default function PageAgenda() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
       <h1 className="font-serif text-2xl font-semibold text-night-900">Agenda</h1>
       <div className="flex flex-wrap items-end gap-4">
-        <FiltreDatePlanning value={date} onChange={setDate} />
+        <FiltreDatePlanning value={periode} onChange={setPeriode} />
         {role === UserRole.VEILLEUR && (
           <FiltreMesReservations
             checked={mesReservationsUniquement}
@@ -112,8 +116,8 @@ export default function PageAgenda() {
       ) : (
         <Suspense fallback={<Spinner size="lg" />}>
           <CalendrierReservations
-            key={date}
-            date={date}
+            key={periodeCacheKey(periode)}
+            periode={periode}
             entries={visibleEntries}
             isLoading={planningQuery.isLoading}
             onSelectSlot={onSelectSlot}

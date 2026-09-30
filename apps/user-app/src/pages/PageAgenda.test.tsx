@@ -11,6 +11,7 @@ import {
 import PageAgenda from "./PageAgenda";
 import { useAuth } from "../hooks/useAuth";
 import { usePlanning } from "../hooks/usePlanning";
+import type { PlanningPeriode } from "../hooks/planningPeriode";
 import { useCreateBooking } from "../hooks/useCreateBooking";
 import { useCancelBooking } from "../hooks/useCancelBooking";
 
@@ -20,7 +21,7 @@ vi.mock("../hooks/useCreateBooking");
 vi.mock("../hooks/useCancelBooking");
 
 interface CalendrierStubProps {
-  date: string;
+  periode: PlanningPeriode;
   entries: PlanningEntryResponse[];
   isLoading: boolean;
   onSelectSlot?: (info: DateSelectArg) => void;
@@ -28,9 +29,9 @@ interface CalendrierStubProps {
 }
 
 vi.mock("../components/agenda/CalendrierReservations", () => ({
-  default: ({ date, entries, isLoading, onSelectSlot, onEventClick }: CalendrierStubProps) => (
+  default: ({ periode, entries, isLoading, onSelectSlot, onEventClick }: CalendrierStubProps) => (
     <div data-testid="calendrier-stub">
-      <span data-testid="date">{date}</span>
+      <span data-testid="date">{periode.mode === "jour" ? periode.date : ""}</span>
       <span data-testid="loading">{String(isLoading)}</span>
       <span data-testid="selectable">{String(Boolean(onSelectSlot))}</span>
       <span data-testid="clickable">{String(Boolean(onEventClick))}</span>
@@ -317,8 +318,8 @@ describe("pages/PageAgenda (user-app)", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        dateDebut: "2026-06-01T10:00:00.000Z",
-        dateFin: "2026-06-01T11:00:00.000Z",
+        dateDebut: "2026-06-01T12:00:00+02:00",
+        dateFin: "2026-06-01T13:00:00+02:00",
         description: "Test",
       },
       expect.anything(),
