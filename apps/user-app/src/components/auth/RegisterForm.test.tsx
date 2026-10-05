@@ -203,6 +203,31 @@ describe("components/auth/RegisterForm (user-app)", () => {
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
+  it("affiche le vrai message métier backend (409 email/téléphone déjà utilisé), pas le message générique (non-régression)", async () => {
+    // Forme réaliste du corps ErrorResponse backend sur un 409 doublon : pas de champ
+    // `code`, le message métier est dans `message` (cf. parseErrorBody, packages/shared/src/api/client.ts).
+    // `ApiError.code` est dérivé du champ `error` du corps ("Conflict" ici).
+    const register = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError("Conflict", 409, "Cet email est déjà utilisé"));
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    expect(await screen.findByText("Cet email est déjà utilisé")).toBeInTheDocument();
+    expect(screen.queryByText("Erreur inconnue")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Une erreur est survenue, veuillez réessayer."),
+    ).not.toBeInTheDocument();
+  });
+
   it("permet de choisir le rôle VEILLEUR et le transmet dans le dto", async () => {
     const register = vi.fn().mockResolvedValueOnce(authResponse);
     mockUseAuth(register);

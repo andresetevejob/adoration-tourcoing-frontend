@@ -12,7 +12,7 @@ import {
 export { resetAnnoncesStore } from "./annoncesStore";
 
 function notFound(message = "Annonce introuvable.") {
-  return HttpResponse.json({ code: "ANNONCE_NOT_FOUND", message }, { status: 404 });
+  return HttpResponse.json({ error: "ANNONCE_NOT_FOUND", message }, { status: 404 });
 }
 
 export const annoncesHandlers: HttpHandler[] = [

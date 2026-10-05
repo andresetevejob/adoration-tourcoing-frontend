@@ -107,4 +107,33 @@ describe("hooks/useCreateUser (admin-app)", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Email déjà utilisé");
   });
+
+  it("affiche le vrai message métier backend (409 email/téléphone déjà utilisé), pas le message générique (non-régression)", async () => {
+    // Forme réaliste du corps ErrorResponse backend sur un 409 doublon : pas de champ
+    // `code`, le message métier est dans `message` (cf. parseErrorBody, packages/shared/src/api/client.ts).
+    // `ApiError.code` est dérivé du champ `error` du corps ("Conflict" ici).
+    vi.mocked(createUser).mockRejectedValueOnce(
+      new ApiError("Conflict", 409, "Cet email est déjà utilisé"),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+    const { result } = renderHook(() => useCreateUser(), { wrapper: buildWrapper(queryClient) });
+
+    act(() => {
+      result.current.mutate({
+        dto: {
+          email: "nouveau@example.com",
+          password: "Password1!",
+          nom: "Dupont",
+          prenoms: "Jean",
+          role: UserRole.ADORATEUR,
+        },
+      });
+    });
+
+    const toast = await screen.findByRole("status");
+    expect(toast).toHaveTextContent("Cet email est déjà utilisé");
+    expect(toast).not.toHaveTextContent("Erreur inconnue");
+    expect(toast).not.toHaveTextContent("Une erreur est survenue, veuillez réessayer.");
+  });
 });

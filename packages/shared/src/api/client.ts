@@ -59,13 +59,12 @@ async function parseErrorBody(response: Response): Promise<{ code: string; messa
     if (
       body &&
       typeof body === "object" &&
-      "code" in body &&
       "message" in body &&
-      typeof (body as { code: unknown }).code === "string" &&
       typeof (body as { message: unknown }).message === "string"
     ) {
+      const error = (body as { error?: unknown }).error;
       return {
-        code: (body as { code: string }).code,
+        code: typeof error === "string" ? error : "UNKNOWN_ERROR",
         message: (body as { message: string }).message,
       };
     }
