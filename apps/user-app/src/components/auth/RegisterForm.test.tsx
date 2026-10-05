@@ -228,6 +228,95 @@ describe("components/auth/RegisterForm (user-app)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("affiche le bandeau d'erreur (role=alert) au-dessus du formulaire et n'affiche aucun toast quand register() rejette avec une ApiError", async () => {
+    const register = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError("Conflict", 409, "Cet email est déjà utilisé"));
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Cet email est déjà utilisé");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("permet de fermer le bandeau d'erreur au clic sur la croix", async () => {
+    const register = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError("Conflict", 409, "Cet email est déjà utilisé"));
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Fermer" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("réinitialise le bandeau d'erreur dès le début d'une nouvelle soumission, avant le nouvel appel réseau", async () => {
+    const neverResolves = new Promise<never>(() => {
+      // volontairement jamais résolue : on vérifie que le bandeau disparaît
+      // avant même que la 2e réponse réseau n'arrive.
+    });
+    const register = vi
+      .fn()
+      .mockRejectedValueOnce(new ApiError("Conflict", 409, "Cet email est déjà utilisé"))
+      .mockReturnValueOnce(neverResolves);
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+    expect(register).toHaveBeenCalledTimes(2);
+  });
+
+  it("affiche un toast d'erreur (pas de bandeau) quand register() rejette avec une erreur générique non-ApiError (non-régression)", async () => {
+    const register = vi.fn().mockRejectedValueOnce(new Error("Erreur réseau inattendue"));
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    expect(
+      await screen.findByText("Une erreur est survenue, veuillez réessayer."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("permet de choisir le rôle VEILLEUR et le transmet dans le dto", async () => {
     const register = vi.fn().mockResolvedValueOnce(authResponse);
     mockUseAuth(register);

@@ -1,10 +1,8 @@
 import { useMutation, useQueryClient, type UseMutationResult } from "@tanstack/react-query";
-import { ApiError } from "@chapelle/shared/api";
+import type { ApiError } from "@chapelle/shared/api";
 import type { CreateUserRequest, UserResponse } from "@chapelle/shared/types";
 import { useToast } from "@chapelle/shared/ui";
 import { createUser } from "../api/endpoints/users";
-
-const GENERIC_ERROR_MESSAGE = "Une erreur est survenue, veuillez réessayer.";
 
 export interface CreateUserVariables {
   dto: CreateUserRequest;
@@ -26,9 +24,6 @@ export function useCreateUser(): UseMutationResult<UserResponse, ApiError, Creat
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["users"] });
       show("Utilisateur créé.", "success");
-    },
-    onError: (error) => {
-      show(error instanceof ApiError ? error.message || GENERIC_ERROR_MESSAGE : GENERIC_ERROR_MESSAGE, "error");
     },
   });
 }

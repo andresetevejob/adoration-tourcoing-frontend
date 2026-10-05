@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { CreateUserRequest } from "@chapelle/shared/types";
 import { Card } from "@chapelle/shared/ui";
@@ -10,13 +11,18 @@ import { UserForm } from "../../components/users/UserForm";
 export default function AdminCreatePage() {
   const navigate = useNavigate();
   const createUser = useCreateUser();
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
 
   function handleSubmit(dto: CreateUserRequest, photo?: File): void {
+    setApiErrorMessage(null);
     createUser.mutate(
       { dto, photo },
       {
         onSuccess: () => {
           void navigate("/administrateurs");
+        },
+        onError: (error) => {
+          setApiErrorMessage(error.message || "Une erreur est survenue, veuillez réessayer.");
         },
       },
     );
@@ -36,6 +42,8 @@ export default function AdminCreatePage() {
           onCancel={() => {
             void navigate("/administrateurs");
           }}
+          apiErrorMessage={apiErrorMessage}
+          onDismissError={() => setApiErrorMessage(null)}
         />
       </Card>
     </div>

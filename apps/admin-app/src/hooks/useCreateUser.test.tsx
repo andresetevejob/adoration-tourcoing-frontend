@@ -87,31 +87,7 @@ describe("hooks/useCreateUser (admin-app)", () => {
     expect(createUser).toHaveBeenCalledWith(dto, photo);
   });
 
-  it("affiche un toast d'erreur avec le message de l'ApiError quand createUser échoue", async () => {
-    vi.mocked(createUser).mockRejectedValueOnce(new ApiError("CONFLICT", 409, "Email déjà utilisé"));
-    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-
-    const { result } = renderHook(() => useCreateUser(), { wrapper: buildWrapper(queryClient) });
-
-    act(() => {
-      result.current.mutate({
-        dto: {
-          email: "nouveau@example.com",
-          password: "Password1!",
-          nom: "Dupont",
-          prenoms: "Jean",
-          role: UserRole.ADORATEUR,
-        },
-      });
-    });
-
-    expect(await screen.findByRole("status")).toHaveTextContent("Email déjà utilisé");
-  });
-
-  it("affiche le vrai message métier backend (409 email/téléphone déjà utilisé), pas le message générique (non-régression)", async () => {
-    // Forme réaliste du corps ErrorResponse backend sur un 409 doublon : pas de champ
-    // `code`, le message métier est dans `message` (cf. parseErrorBody, packages/shared/src/api/client.ts).
-    // `ApiError.code` est dérivé du champ `error` du corps ("Conflict" ici).
+  it("n'affiche aucun toast quand createUser échoue : l'erreur est exposée via le résultat de la mutation pour que l'appelant l'affiche (bandeau d'erreur)", async () => {
     vi.mocked(createUser).mockRejectedValueOnce(
       new ApiError("Conflict", 409, "Cet email est déjà utilisé"),
     );
@@ -131,9 +107,40 @@ describe("hooks/useCreateUser (admin-app)", () => {
       });
     });
 
-    const toast = await screen.findByRole("status");
-    expect(toast).toHaveTextContent("Cet email est déjà utilisé");
-    expect(toast).not.toHaveTextContent("Erreur inconnue");
-    expect(toast).not.toHaveTextContent("Une erreur est survenue, veuillez réessayer.");
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+    expect(result.current.error?.message).toBe("Cet email est déjà utilisé");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("transmet l'erreur au onError fourni par l'appelant via les options de mutate()", async () => {
+    vi.mocked(createUser).mockRejectedValueOnce(
+      new ApiError("Conflict", 409, "Cet email est déjà utilisé"),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+    const { result } = renderHook(() => useCreateUser(), { wrapper: buildWrapper(queryClient) });
+    const onError = vi.fn();
+
+    act(() => {
+      result.current.mutate(
+        {
+          dto: {
+            email: "nouveau@example.com",
+            password: "Password1!",
+            nom: "Dupont",
+            prenoms: "Jean",
+            role: UserRole.ADORATEUR,
+          },
+        },
+        { onError },
+      );
+    });
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledTimes(1);
+    });
+    expect((onError.mock.calls[0][0] as ApiError).message).toBe("Cet email est déjà utilisé");
   });
 });

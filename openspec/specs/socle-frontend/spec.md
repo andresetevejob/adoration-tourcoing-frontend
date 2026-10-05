@@ -1,8 +1,9 @@
-# Spec — socle-frontend (composant Input & pipeline Tailwind)
+# Spec — socle-frontend (composant Input, FormAlert & pipeline Tailwind)
 
-> Périmètre gradué : le composant partagé `Input` (packages/shared/src/ui/Input.tsx) et la
-> configuration Tailwind nécessaire à son bon fonctionnement. Le reste de la capacité
-> socle-frontend (client API, tooling, autres composants du kit UI) n'est pas encore documenté ici.
+> Périmètre gradué : le composant partagé `Input` (packages/shared/src/ui/Input.tsx), le composant
+> partagé `FormAlert` (packages/shared/src/ui/FormAlert.tsx) et la configuration Tailwind nécessaire
+> à leur bon fonctionnement. Le reste de la capacité socle-frontend (client API, tooling, autres
+> composants du kit UI) n'est pas encore documenté ici.
 
 ## Pipeline CSS : scan de packages/shared
 
@@ -51,3 +52,23 @@ l'inscription) sans introduire de dépendance externe (icônes en SVG inline).
 - `apps/user-app/src/components/auth/LoginForm.tsx`
 - `apps/admin-app/src/components/auth/LoginForm.tsx`
 - `apps/admin-app/src/components/users/UserForm.tsx`
+
+## Composant FormAlert
+
+Le composant `FormAlert` (`packages/shared/src/ui/FormAlert.tsx`) est le bandeau d'erreur dismissible
+affiché au-dessus d'un formulaire, en alternative au `Toast` global quand l'erreur doit rester
+visible jusqu'à action explicite de l'utilisateur.
+
+Accepte `message` (string) et `onDismiss` (callback). Rendu : `role="alert"`, palette `bg-red-100`/
+`text-red-800` (identique à la variante `danger` de `Badge`), bouton de fermeture (✕,
+`aria-label="Fermer"`) en haut à droite. Pas d'auto-dismiss (fermeture manuelle uniquement) — à la
+différence du `Toast` (disparition automatique après 4s), choisi délibérément ici pour ne pas faire
+disparaître un message important avant que l'utilisateur l'ait vu.
+
+### Consommateurs actuels
+- `apps/user-app/src/components/auth/RegisterForm.tsx`
+- `apps/admin-app/src/components/users/UserForm.tsx` (mode `create` uniquement)
+
+WHY : le `Toast` global (bas à droite, auto-dismiss 4s) peut passer inaperçu sur un écran de
+formulaire long ou sur mobile — constaté sur l'erreur 409 (email/téléphone déjà utilisé) lors d'une
+création de compte.

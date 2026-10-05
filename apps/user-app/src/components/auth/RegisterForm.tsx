@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -5,7 +6,7 @@ import { ApiError } from "@chapelle/shared/api";
 import type { AuthResponse, RegisterRequest } from "@chapelle/shared/types";
 import { UserRole } from "@chapelle/shared/types";
 import { PHOTO_ACCEPTED_MIME_TYPES, registerSchema } from "@chapelle/shared/utils";
-import { Button, FileInput, Input, Select, useToast } from "@chapelle/shared/ui";
+import { Button, FileInput, FormAlert, Input, Select, useToast } from "@chapelle/shared/ui";
 import { useAuth } from "../../hooks/useAuth";
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -24,6 +25,7 @@ const ROLE_OPTIONS = [
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const { register: registerUser } = useAuth();
   const { show } = useToast();
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -36,6 +38,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const role = useWatch({ control, name: "role" });
 
   async function onSubmit(values: RegisterFormValues): Promise<void> {
+    setApiErrorMessage(null);
     // `confirmPassword` ne sert qu'à la validation côté client (registerSchema.refine) :
     // il n'est jamais transmis au backend, `dto` est construit champ par champ plutôt
     // que par déstructuration pour l'exclure explicitement.
@@ -55,7 +58,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       onSuccess(response);
     } catch (error) {
       if (error instanceof ApiError) {
-        show(error.message || GENERIC_ERROR_MESSAGE, "error");
+        setApiErrorMessage(error.message || GENERIC_ERROR_MESSAGE);
         return;
       }
       show(GENERIC_ERROR_MESSAGE, "error");
@@ -70,6 +73,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       className="flex flex-col gap-4"
       noValidate
     >
+      {apiErrorMessage && (
+        <FormAlert message={apiErrorMessage} onDismiss={() => setApiErrorMessage(null)} />
+      )}
       <Input
         label="Email"
         type="email"

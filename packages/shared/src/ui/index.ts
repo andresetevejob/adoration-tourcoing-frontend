@@ -33,3 +33,6 @@ export type { SpinnerProps } from "./Spinner";
 
 export { ToastProvider, useToast } from "./Toast";
 export type { ToastVariant } from "./Toast";
+
+export { FormAlert } from "./FormAlert";
+export type { FormAlertProps } from "./FormAlert";

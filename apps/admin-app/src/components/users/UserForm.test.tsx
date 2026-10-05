@@ -203,6 +203,58 @@ describe("components/users/UserForm (admin-app)", () => {
       expect(optionLabels).toEqual(["Administrateur"]);
     });
 
+    it("affiche le bandeau d'erreur quand apiErrorMessage et onDismissError sont fournis, et appelle onDismissError au clic sur la croix", () => {
+      const onDismissError = vi.fn();
+      render(
+        <UserForm
+          mode="create"
+          roleOptions={MANAGEABLE_ROLE_OPTIONS}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          apiErrorMessage="Cet email est déjà utilisé"
+          onDismissError={onDismissError}
+        />,
+      );
+
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent("Cet email est déjà utilisé");
+
+      fireEvent.click(screen.getByRole("button", { name: "Fermer" }));
+      expect(onDismissError).toHaveBeenCalledTimes(1);
+    });
+
+    it("n'affiche aucun bandeau d'erreur quand apiErrorMessage est null", () => {
+      render(
+        <UserForm
+          mode="create"
+          roleOptions={MANAGEABLE_ROLE_OPTIONS}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          apiErrorMessage={null}
+          onDismissError={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("n'affiche aucun bandeau d'erreur quand onDismissError n'est pas fourni, même avec apiErrorMessage", () => {
+      render(
+        <UserForm
+          mode="create"
+          roleOptions={MANAGEABLE_ROLE_OPTIONS}
+          isSubmitting={false}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          apiErrorMessage="Cet email est déjà utilisé"
+        />,
+      );
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
     it("appelle onCancel au clic sur Annuler", () => {
       const onCancel = vi.fn();
       render(

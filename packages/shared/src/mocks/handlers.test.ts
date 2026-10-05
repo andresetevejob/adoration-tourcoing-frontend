@@ -1,7 +1,6 @@
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { StatutAnnonce, type AnnonceCreateRequest, type AnnonceResponse } from "../types/annonce";
-import type { ApiErrorPayload } from "../types/common";
 import { annoncesHandlers, contactHandlers, resetAnnoncesStore } from "./handlers";
 
 const server = setupServer(...annoncesHandlers, ...contactHandlers);
@@ -42,12 +41,12 @@ describe("mocks/handlers — /annonces", () => {
     expect(body.id).toBe("annonce-1");
   });
 
-  it("GET /annonces/:id retourne 404 { code, message } si l'id est inconnu", async () => {
+  it("GET /annonces/:id retourne 404 { error, message } si l'id est inconnu", async () => {
     const response = await fetch(`${BASE_URL}/annonces/inconnu`);
-    const body = (await response.json()) as ApiErrorPayload;
+    const body = (await response.json()) as { error: string; message: string };
 
     expect(response.status).toBe(404);
-    expect(body.code).toBe("ANNONCE_NOT_FOUND");
+    expect(body.error).toBe("ANNONCE_NOT_FOUND");
     expect(typeof body.message).toBe("string");
   });
 

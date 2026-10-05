@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
+import { ApiError } from "@chapelle/shared/api";
 import {
   StatutValidation,
   UserRole,
@@ -60,6 +61,8 @@ interface UserFormStubProps {
   mode: "create" | "edit";
   onSubmit: (dto: CreateUserRequest, photo?: File) => void;
   onCancel?: () => void;
+  apiErrorMessage?: string | null;
+  onDismissError?: () => void;
 }
 
 const stubDto: CreateUserRequest = {
@@ -72,8 +75,16 @@ const stubDto: CreateUserRequest = {
 const stubPhoto = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
 
 vi.mock("../components/users/UserForm", () => ({
-  UserForm: ({ onSubmit, onCancel }: UserFormStubProps) => (
+  UserForm: ({ onSubmit, onCancel, apiErrorMessage, onDismissError }: UserFormStubProps) => (
     <div data-testid="user-form-stub">
+      {apiErrorMessage && onDismissError && (
+        <div role="alert">
+          {apiErrorMessage}
+          <button type="button" onClick={onDismissError}>
+            fermer-erreur-creation
+          </button>
+        </div>
+      )}
       <button
         type="button"
         onClick={() => {
@@ -230,6 +241,50 @@ describe("pages/PageGestionUtilisateurs (admin-app)", () => {
     fireEvent.click(screen.getByText("annuler-creation"));
 
     expect(screen.queryByTestId("user-form-stub")).not.toBeInTheDocument();
+  });
+
+  it("transmet le message d'erreur à UserForm quand createUser.mutate échoue avec une ApiError 409", () => {
+    mockUsers(emptyPage);
+    const mutate = vi.fn(
+      (
+        _variables: { dto: CreateUserRequest; photo?: File },
+        options?: { onError?: (error: ApiError) => void },
+      ) => {
+        options?.onError?.(new ApiError("Conflict", 409, "Cet email est déjà utilisé"));
+      },
+    );
+    mockCreateUser(mutate);
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un utilisateur" }));
+    fireEvent.click(screen.getByText("soumettre-creation"));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Cet email est déjà utilisé");
+  });
+
+  it("réinitialise l'erreur de création à la fermeture de la modale (pas de résidu à la réouverture)", () => {
+    mockUsers(emptyPage);
+    const mutate = vi.fn(
+      (
+        _variables: { dto: CreateUserRequest; photo?: File },
+        options?: { onError?: (error: ApiError) => void },
+      ) => {
+        options?.onError?.(new ApiError("Conflict", 409, "Cet email est déjà utilisé"));
+      },
+    );
+    mockCreateUser(mutate);
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un utilisateur" }));
+    fireEvent.click(screen.getByText("soumettre-creation"));
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("annuler-creation"));
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un utilisateur" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("interroge useUsers avec statutValidation=EN_ATTENTE après le raccourci 'Comptes en attente'", () => {

@@ -16,8 +16,14 @@ export default function PageGestionUtilisateurs() {
   const [filters, setFilters] = useState<UserListFilters>({});
   const [page, setPage] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
   const usersQuery = useUsers({ ...filters, page, size: DEFAULT_PAGE_SIZE });
   const createUser = useCreateUser();
+
+  function closeCreateModal(): void {
+    setIsCreateModalOpen(false);
+    setApiErrorMessage(null);
+  }
 
   function handleFiltersSubmit(values: UserListFilters): void {
     setFilters(values);
@@ -30,11 +36,15 @@ export default function PageGestionUtilisateurs() {
   }
 
   function handleCreateSubmit(dto: CreateUserRequest, photo?: File): void {
+    setApiErrorMessage(null);
     createUser.mutate(
       { dto, photo },
       {
         onSuccess: () => {
           setIsCreateModalOpen(false);
+        },
+        onError: (error) => {
+          setApiErrorMessage(error.message || "Une erreur est survenue, veuillez réessayer.");
         },
       },
     );
@@ -73,21 +83,15 @@ export default function PageGestionUtilisateurs() {
         </>
       )}
       {isCreateModalOpen && (
-        <Modal
-          isOpen
-          title="Ajouter un utilisateur"
-          onClose={() => {
-            setIsCreateModalOpen(false);
-          }}
-        >
+        <Modal isOpen title="Ajouter un utilisateur" onClose={closeCreateModal}>
           <UserForm
             mode="create"
             roleOptions={MANAGEABLE_ROLE_OPTIONS}
             isSubmitting={createUser.isPending}
             onSubmit={handleCreateSubmit}
-            onCancel={() => {
-              setIsCreateModalOpen(false);
-            }}
+            onCancel={closeCreateModal}
+            apiErrorMessage={apiErrorMessage}
+            onDismissError={() => setApiErrorMessage(null)}
           />
         </Modal>
       )}

@@ -13,7 +13,7 @@ import {
   telephoneSchema,
   validatePhotoForRole,
 } from "@chapelle/shared/utils";
-import { Button, FileInput, Input, Select } from "@chapelle/shared/ui";
+import { Button, FileInput, FormAlert, Input, Select } from "@chapelle/shared/ui";
 
 export type UserFormProps =
   | {
@@ -22,6 +22,8 @@ export type UserFormProps =
       isSubmitting: boolean;
       onSubmit: (dto: CreateUserRequest, photo?: File) => void;
       onCancel: () => void;
+      apiErrorMessage?: string | null;
+      onDismissError?: () => void;
     }
   | {
       mode: "edit";
@@ -83,7 +85,14 @@ export function UserForm(props: UserFormProps) {
   return <EditUserForm {...props} />;
 }
 
-function CreateUserForm({ roleOptions, isSubmitting, onSubmit, onCancel }: CreateUserFormProps) {
+function CreateUserForm({
+  roleOptions,
+  isSubmitting,
+  onSubmit,
+  onCancel,
+  apiErrorMessage,
+  onDismissError,
+}: CreateUserFormProps) {
   const allowedRoles = roleOptions.map((option) => option.value);
   const schema = buildCreateUserFormSchema(allowedRoles);
   const {
@@ -118,6 +127,9 @@ function CreateUserForm({ roleOptions, isSubmitting, onSubmit, onCancel }: Creat
       className="flex flex-col gap-4"
       noValidate
     >
+      {apiErrorMessage && onDismissError && (
+        <FormAlert message={apiErrorMessage} onDismiss={onDismissError} />
+      )}
       <Input label="Email" type="email" error={errors.email?.message} {...register("email")} />
       <Input
         label="Mot de passe"

@@ -37,3 +37,19 @@ l'authentification (aucun récit US-AUTH-01 à 08 ne couvrait ce cas).
 `apps/admin-app/src/components/auth/GuestRoute.tsx`) est le miroir de `ProtectedRoute` : mêmes
 trois états (hydratation / authentifié / non authentifié), réutilise la fonction pure
 `resolvePostLoginRedirect(role, rôlesAutorisésDeLApp)` déjà utilisée après une connexion réussie.
+
+## Affichage des erreurs de soumission (inscription)
+
+WHEN la soumission du formulaire d'inscription (`RegisterForm`) échoue avec une `ApiError` (ex. 409
+— email ou téléphone déjà utilisé) THEN le message réel renvoyé par le backend est affiché dans un
+`FormAlert` (cf. `socle-frontend/spec.md`) au-dessus du formulaire (avant le champ Email), pas via le
+`Toast` global.
+
+WHEN l'utilisateur ferme ce bandeau (croix) OU soumet à nouveau le formulaire THEN le bandeau
+disparaît (réinitialisé avant le nouvel appel réseau).
+
+WHEN l'erreur n'est pas une `ApiError` (cas générique, imprévu) THEN le comportement historique est
+conservé : `Toast` d'erreur générique, inchangé.
+
+> Périmètre gradué ici : uniquement l'affichage de l'erreur de soumission. Le reste du formulaire
+> d'inscription (champs, validation, succès) reste non gradué, cf. note en tête de ce fichier.
