@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { UserRole } from "../types/user";
-import { PASSWORD_MIN_LENGTH, TELEPHONE_PATTERN } from "./constants";
+import { PASSWORD_MIN_LENGTH, PHOTO_ACCEPTED_MIME_TYPES, PHOTO_MAX_SIZE_BYTES, TELEPHONE_PATTERN } from "./constants";
 
 export const emailSchema = z.string().email();
 
@@ -17,6 +17,39 @@ export const telephoneSchema = z.string().regex(TELEPHONE_PATTERN).optional().or
 
 export const roleSchema = z.nativeEnum(UserRole);
 
+export const photoSchema = z.custom<FileList | undefined>().optional();
+
+export function validatePhotoForRole(
+  role: UserRole,
+  photo: FileList | undefined,
+  ctx: z.RefinementCtx,
+): void {
+  if (role !== UserRole.VEILLEUR) return;
+  const file = photo?.[0];
+  if (!file) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "La photo est obligatoire pour un compte Veilleur",
+      path: ["photo"],
+    });
+    return;
+  }
+  if (!PHOTO_ACCEPTED_MIME_TYPES.includes(file.type)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Format de photo non supporté (jpeg ou png uniquement)",
+      path: ["photo"],
+    });
+  }
+  if (file.size > PHOTO_MAX_SIZE_BYTES) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "La photo ne doit pas dépasser 5 Mo",
+      path: ["photo"],
+    });
+  }
+}
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string(),
@@ -31,6 +64,10 @@ export const registerSchema = z
     prenoms: prenomsSchema,
     telephone: telephoneSchema,
     role: z.enum([UserRole.ADORATEUR, UserRole.VEILLEUR]),
+    photo: photoSchema,
+  })
+  .superRefine((data, ctx) => {
+    validatePhotoForRole(data.role, data.photo, ctx);
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Les mots de passe ne correspondent pas",

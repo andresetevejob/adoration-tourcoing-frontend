@@ -48,8 +48,22 @@ export function getUser(id: string): Promise<UserResponse> {
 
 /** POST /users — création par un Administrateur/SuperAdministrateur, statut initial
  * `VALIDE` automatiquement quel que soit le rôle (cf. conception U4 §2). */
-export function createUser(dto: CreateUserRequest): Promise<UserResponse> {
-  return apiClient.post<UserResponse>("/users", dto, { skipForbiddenRedirect: true });
+export function createUser(dto: CreateUserRequest, photo?: File): Promise<UserResponse> {
+  return apiClient.post<UserResponse>("/users", photo ? toMultipartFormData(dto, photo) : dto, {
+    skipForbiddenRedirect: true,
+  });
+}
+
+function toMultipartFormData(dto: CreateUserRequest, photo: File): FormData {
+  const formData = new FormData();
+  formData.append("email", dto.email);
+  formData.append("password", dto.password);
+  formData.append("nom", dto.nom);
+  formData.append("prenoms", dto.prenoms);
+  if (dto.telephone) formData.append("telephone", dto.telephone);
+  formData.append("role", dto.role);
+  formData.append("photo", photo);
+  return formData;
 }
 
 export function deleteUser(id: string): Promise<void> {

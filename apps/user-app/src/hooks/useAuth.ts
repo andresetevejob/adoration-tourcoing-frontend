@@ -20,7 +20,7 @@ export interface UseAuthResult {
   isHydrated: boolean;
   login: (dto: LoginRequest) => Promise<AuthResponse>;
   /** N'appelle PAS `setUser` : pas de connexion automatique après inscription (US-AUTH-01). */
-  register: (dto: RegisterRequest) => Promise<AuthResponse>;
+  register: (dto: RegisterRequest, photo?: File) => Promise<AuthResponse>;
   logout: () => Promise<void>;
 }
 
@@ -37,8 +37,8 @@ export function useAuth(): UseAuthResult {
     return response;
   }
 
-  async function register(dto: RegisterRequest): Promise<AuthResponse> {
-    return registerRequest(dto);
+  async function register(dto: RegisterRequest, photo?: File): Promise<AuthResponse> {
+    return registerRequest(dto, photo);
   }
 
   async function logout(): Promise<void> {

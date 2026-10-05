@@ -105,6 +105,52 @@ describe("api/endpoints/users (admin-app)", () => {
     expect(result).toBe(user);
   });
 
+  it("createUser() avec une photo construit un FormData avec tous les champs et poste dessus", async () => {
+    postMock.mockResolvedValueOnce(user);
+    const dto = {
+      email: "veilleur@example.com",
+      password: "Password1!",
+      nom: "Curé",
+      prenoms: "Michel",
+      telephone: "0612345678",
+      role: UserRole.VEILLEUR,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+
+    const result = await createUser(dto, photo);
+
+    expect(postMock).toHaveBeenCalledTimes(1);
+    const [path, body, options] = postMock.mock.calls[0] as [string, FormData, unknown];
+    expect(path).toBe("/users");
+    expect(options).toEqual({ skipForbiddenRedirect: true });
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("email")).toBe(dto.email);
+    expect(body.get("password")).toBe(dto.password);
+    expect(body.get("nom")).toBe(dto.nom);
+    expect(body.get("prenoms")).toBe(dto.prenoms);
+    expect(body.get("telephone")).toBe(dto.telephone);
+    expect(body.get("role")).toBe(dto.role);
+    expect(body.get("photo")).toBe(photo);
+    expect(result).toBe(user);
+  });
+
+  it("createUser() sans telephone et avec une photo omet le champ telephone du FormData", async () => {
+    postMock.mockResolvedValueOnce(user);
+    const dto = {
+      email: "veilleur@example.com",
+      password: "Password1!",
+      nom: "Curé",
+      prenoms: "Michel",
+      role: UserRole.VEILLEUR,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+
+    await createUser(dto, photo);
+
+    const [, body] = postMock.mock.calls[0] as [string, FormData];
+    expect(body.has("telephone")).toBe(false);
+  });
+
   it("deleteUser() effectue un DELETE /users/{id} avec skipForbiddenRedirect", async () => {
     deleteMock.mockResolvedValueOnce(undefined);
 

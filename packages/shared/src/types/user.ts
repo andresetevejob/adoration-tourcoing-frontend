@@ -20,6 +20,7 @@ export interface UserResponse {
   role: UserRole;
   statutValidation: StatutValidation;
   dateCreation: string;
+  photo?: string | null;
 }
 
 export interface UserListFilters {

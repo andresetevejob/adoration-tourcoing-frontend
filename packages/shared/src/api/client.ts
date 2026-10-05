@@ -91,13 +91,17 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
         }, API_TIMEOUT_MS)
       : undefined;
 
+    const isFormData = body instanceof FormData;
+
     let response: Response;
     try {
       response = await fetch(`${baseURL}${path}`, {
         method,
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
+        // Ne pas fixer Content-Type pour un FormData : le navigateur calcule
+        // lui-même `multipart/form-data; boundary=...`.
+        headers: isFormData ? undefined : { "Content-Type": "application/json" },
+        body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
         signal: options?.signal ?? controller?.signal,
       });
     } finally {

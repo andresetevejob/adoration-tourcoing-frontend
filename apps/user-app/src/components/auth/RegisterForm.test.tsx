@@ -33,6 +33,14 @@ function mockUseAuth(register: ReturnType<typeof vi.fn>) {
   });
 }
 
+/** `@testing-library/user-event` n'est pas une dépendance du repo : on simule la
+ * sélection de fichier via `fireEvent.change` en fixant `files` directement sur
+ * l'input, comme le fait déjà `input type="file"` en environnement jsdom. */
+function uploadFile(input: HTMLInputElement, file: File): void {
+  Object.defineProperty(input, "files", { value: [file], configurable: true });
+  fireEvent.change(input);
+}
+
 function fillValidForm() {
   fireEvent.change(screen.getByLabelText("Email"), {
     target: { value: "adorateur@example.com" },
@@ -74,6 +82,83 @@ describe("components/auth/RegisterForm (user-app)", () => {
       telephone: "0612345678",
       role: UserRole.ADORATEUR,
     });
+    expect(register.mock.calls[0][1]).toBeUndefined();
+  });
+
+  it("n'affiche pas le champ Photo par défaut (rôle Adorateur)", () => {
+    mockUseAuth(vi.fn());
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    expect(screen.queryByLabelText("Photo")).not.toBeInTheDocument();
+  });
+
+  it("affiche le champ Photo quand le rôle Veilleur est sélectionné", () => {
+    mockUseAuth(vi.fn());
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
+      target: { value: UserRole.VEILLEUR },
+    });
+
+    expect(screen.getByLabelText("Photo")).toBeInTheDocument();
+  });
+
+  it("bloque la soumission et affiche une erreur quand le rôle Veilleur n'a pas de photo, sans appeler register()", async () => {
+    const register = vi.fn();
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
+      target: { value: UserRole.VEILLEUR },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    expect(
+      await screen.findByText("La photo est obligatoire pour un compte Veilleur"),
+    ).toBeInTheDocument();
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it("transmet la photo à register() quand le rôle Veilleur a une photo valide", async () => {
+    const register = vi.fn().mockResolvedValueOnce(authResponse);
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
+      target: { value: UserRole.VEILLEUR },
+    });
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    uploadFile(screen.getByLabelText<HTMLInputElement>("Photo"), photo);
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledTimes(1);
+    });
+    const dto = register.mock.calls[0][0] as Record<string, unknown>;
+    expect(dto.role).toBe(UserRole.VEILLEUR);
+    expect(register.mock.calls[0][1]).toBe(photo);
   });
 
   it("bloque la soumission côté client quand password et confirmPassword diffèrent, sans appeler register()", async () => {
@@ -132,6 +217,10 @@ describe("components/auth/RegisterForm (user-app)", () => {
     fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
       target: { value: UserRole.VEILLEUR },
     });
+    uploadFile(
+      screen.getByLabelText<HTMLInputElement>("Photo"),
+      new File(["contenu"], "photo.jpg", { type: "image/jpeg" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
 
     await waitFor(() => {
@@ -139,5 +228,34 @@ describe("components/auth/RegisterForm (user-app)", () => {
     });
     const dto = register.mock.calls[0][0] as Record<string, unknown>;
     expect(dto.role).toBe(UserRole.VEILLEUR);
+  });
+
+  it("repasser de Veilleur à Adorateur avant soumission n'envoie pas de photo (non-régression)", async () => {
+    const register = vi.fn().mockResolvedValueOnce(authResponse);
+    mockUseAuth(register);
+
+    render(
+      <ToastProvider>
+        <RegisterForm onSuccess={vi.fn()} />
+      </ToastProvider>,
+    );
+
+    fillValidForm();
+    fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
+      target: { value: UserRole.VEILLEUR },
+    });
+    uploadFile(
+      screen.getByLabelText<HTMLInputElement>("Photo"),
+      new File(["contenu"], "photo.jpg", { type: "image/jpeg" }),
+    );
+    fireEvent.change(screen.getByLabelText("Je m'inscris comme"), {
+      target: { value: UserRole.ADORATEUR },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "S'inscrire" }));
+
+    await waitFor(() => {
+      expect(register).toHaveBeenCalledTimes(1);
+    });
+    expect(register.mock.calls[0][1]).toBeUndefined();
   });
 });

@@ -58,9 +58,18 @@ vi.mock("../components/users/UserFilters", () => ({
 
 interface UserFormStubProps {
   mode: "create" | "edit";
-  onSubmit: (dto: CreateUserRequest) => void;
+  onSubmit: (dto: CreateUserRequest, photo?: File) => void;
   onCancel?: () => void;
 }
+
+const stubDto: CreateUserRequest = {
+  email: "nouveau@example.com",
+  password: "Password1!",
+  nom: "Dupont",
+  prenoms: "Jean",
+  role: UserRole.ADORATEUR,
+};
+const stubPhoto = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
 
 vi.mock("../components/users/UserForm", () => ({
   UserForm: ({ onSubmit, onCancel }: UserFormStubProps) => (
@@ -68,16 +77,18 @@ vi.mock("../components/users/UserForm", () => ({
       <button
         type="button"
         onClick={() => {
-          onSubmit({
-            email: "nouveau@example.com",
-            password: "Password1!",
-            nom: "Dupont",
-            prenoms: "Jean",
-            role: UserRole.ADORATEUR,
-          });
+          onSubmit(stubDto);
         }}
       >
         soumettre-creation
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onSubmit({ ...stubDto, role: UserRole.VEILLEUR }, stubPhoto);
+        }}
+      >
+        soumettre-creation-avec-photo
       </button>
       <button type="button" onClick={onCancel}>
         annuler-creation
@@ -172,11 +183,38 @@ describe("pages/PageGestionUtilisateurs (admin-app)", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        email: "nouveau@example.com",
-        password: "Password1!",
-        nom: "Dupont",
-        prenoms: "Jean",
-        role: UserRole.ADORATEUR,
+        dto: {
+          email: "nouveau@example.com",
+          password: "Password1!",
+          nom: "Dupont",
+          prenoms: "Jean",
+          role: UserRole.ADORATEUR,
+        },
+        photo: undefined,
+      },
+      expect.anything(),
+    );
+  });
+
+  it("transmet la photo à createUser.mutate quand UserForm en fournit une", () => {
+    mockUsers(emptyPage);
+    const mutate = mockCreateUser();
+
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ajouter un utilisateur" }));
+    fireEvent.click(screen.getByText("soumettre-creation-avec-photo"));
+
+    expect(mutate).toHaveBeenCalledWith(
+      {
+        dto: {
+          email: "nouveau@example.com",
+          password: "Password1!",
+          nom: "Dupont",
+          prenoms: "Jean",
+          role: UserRole.VEILLEUR,
+        },
+        photo: stubPhoto,
       },
       expect.anything(),
     );

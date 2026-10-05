@@ -11,13 +11,13 @@ import { useAuthStore } from "../store/authStore";
 import { useAuth } from "./useAuth";
 
 const loginMock = vi.fn<(dto: LoginRequest) => Promise<AuthResponse>>();
-const registerMock = vi.fn<(dto: RegisterRequest) => Promise<AuthResponse>>();
+const registerMock = vi.fn<(dto: RegisterRequest, photo?: File) => Promise<AuthResponse>>();
 const logoutMock = vi.fn<() => Promise<void>>();
 const navigateMock = vi.fn<(to: string, options?: { replace?: boolean }) => void>();
 
 vi.mock("../api/endpoints/auth", () => ({
   login: (dto: LoginRequest) => loginMock(dto),
-  register: (dto: RegisterRequest) => registerMock(dto),
+  register: (dto: RegisterRequest, photo?: File) => registerMock(dto, photo),
   logout: () => logoutMock(),
 }));
 
@@ -90,6 +90,45 @@ describe("hooks/useAuth (user-app)", () => {
     expect(response).toBe(authResponse);
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it("register() propage la photo fournie à registerRequest", async () => {
+    registerMock.mockResolvedValueOnce(authResponse);
+    const { result } = renderHook(() => useAuth());
+    const dto: RegisterRequest = {
+      email: "veilleur@example.com",
+      password: "pw",
+      nom: "Dupont",
+      prenoms: "Jean",
+      telephone: "0612345678",
+      role: UserRole.VEILLEUR,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+
+    await act(async () => {
+      await result.current.register(dto, photo);
+    });
+
+    expect(registerMock).toHaveBeenCalledWith(dto, photo);
+  });
+
+  it("register() sans photo appelle registerRequest avec photo undefined", async () => {
+    registerMock.mockResolvedValueOnce(authResponse);
+    const { result } = renderHook(() => useAuth());
+    const dto: RegisterRequest = {
+      email: "adorateur@example.com",
+      password: "pw",
+      nom: "Dupont",
+      prenoms: "Jean",
+      telephone: "0612345678",
+      role: UserRole.ADORATEUR,
+    };
+
+    await act(async () => {
+      await result.current.register(dto);
+    });
+
+    expect(registerMock).toHaveBeenCalledWith(dto, undefined);
   });
 
   it("logout() appelle l'endpoint, vide le store puis navigue vers /connexion", async () => {

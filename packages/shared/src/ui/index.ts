@@ -10,6 +10,9 @@ export type { TextareaProps } from "./Textarea";
 export { Select } from "./Select";
 export type { SelectProps } from "./Select";
 
+export { FileInput } from "./FileInput";
+export type { FileInputProps } from "./FileInput";
+
 export { Table } from "./Table";
 export type { TableColumn, TableProps } from "./Table";
 

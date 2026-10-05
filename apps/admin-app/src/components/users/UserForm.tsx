@@ -1,16 +1,26 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import type { CreateUserRequest, UpdateUserRequest, UserRole } from "@chapelle/shared/types";
-import { emailSchema, nomSchema, passwordSchema, prenomsSchema, telephoneSchema } from "@chapelle/shared/utils";
-import { Button, Input, Select } from "@chapelle/shared/ui";
+import type { CreateUserRequest, UpdateUserRequest } from "@chapelle/shared/types";
+import { UserRole } from "@chapelle/shared/types";
+import {
+  emailSchema,
+  nomSchema,
+  passwordSchema,
+  photoSchema,
+  PHOTO_ACCEPTED_MIME_TYPES,
+  prenomsSchema,
+  telephoneSchema,
+  validatePhotoForRole,
+} from "@chapelle/shared/utils";
+import { Button, FileInput, Input, Select } from "@chapelle/shared/ui";
 
 export type UserFormProps =
   | {
       mode: "create";
       roleOptions: { value: UserRole; label: string }[];
       isSubmitting: boolean;
-      onSubmit: (dto: CreateUserRequest) => void;
+      onSubmit: (dto: CreateUserRequest, photo?: File) => void;
       onCancel: () => void;
     }
   | {
@@ -49,7 +59,11 @@ function buildBaseUserFormSchemaShape(allowedRoles: UserRole[]) {
  * `tsc --strict`. Le contenu des schémas reste rigoureusement identique à la conception.
  */
 function buildCreateUserFormSchema(allowedRoles: UserRole[]) {
-  return z.object({ ...buildBaseUserFormSchemaShape(allowedRoles), password: passwordSchema });
+  return z
+    .object({ ...buildBaseUserFormSchemaShape(allowedRoles), password: passwordSchema, photo: photoSchema })
+    .superRefine((data, ctx) => {
+      validatePhotoForRole(data.role, data.photo, ctx);
+    });
 }
 
 function buildEditUserFormSchema(allowedRoles: UserRole[]) {
@@ -75,11 +89,13 @@ function CreateUserForm({ roleOptions, isSubmitting, onSubmit, onCancel }: Creat
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<CreateUserFormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", nom: "", prenoms: "", telephone: "", password: "", role: allowedRoles[0] },
   });
+  const role = useWatch({ control, name: "role" });
 
   function submit(values: CreateUserFormValues): void {
     const dto: CreateUserRequest = {
@@ -90,7 +106,8 @@ function CreateUserForm({ roleOptions, isSubmitting, onSubmit, onCancel }: Creat
       telephone: values.telephone || undefined,
       role: values.role,
     };
-    onSubmit(dto);
+    const photo = values.role === UserRole.VEILLEUR ? values.photo?.[0] : undefined;
+    onSubmit(dto, photo);
   }
 
   return (
@@ -115,6 +132,14 @@ function CreateUserForm({ roleOptions, isSubmitting, onSubmit, onCancel }: Creat
       </div>
       <Input label="Téléphone" type="tel" error={errors.telephone?.message} {...register("telephone")} />
       <Select label="Rôle" options={roleOptions} error={errors.role?.message} {...register("role")} />
+      {role === UserRole.VEILLEUR && (
+        <FileInput
+          label="Photo"
+          accept={PHOTO_ACCEPTED_MIME_TYPES.join(",")}
+          error={errors.photo?.message}
+          {...register("photo")}
+        />
+      )}
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler

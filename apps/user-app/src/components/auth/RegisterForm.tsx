@@ -1,11 +1,11 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { ApiError } from "@chapelle/shared/api";
 import type { AuthResponse, RegisterRequest } from "@chapelle/shared/types";
 import { UserRole } from "@chapelle/shared/types";
-import { registerSchema } from "@chapelle/shared/utils";
-import { Button, Input, Select, useToast } from "@chapelle/shared/ui";
+import { PHOTO_ACCEPTED_MIME_TYPES, registerSchema } from "@chapelle/shared/utils";
+import { Button, FileInput, Input, Select, useToast } from "@chapelle/shared/ui";
 import { useAuth } from "../../hooks/useAuth";
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -27,11 +27,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { role: UserRole.ADORATEUR },
   });
+  const role = useWatch({ control, name: "role" });
 
   async function onSubmit(values: RegisterFormValues): Promise<void> {
     // `confirmPassword` ne sert qu'à la validation côté client (registerSchema.refine) :
@@ -45,8 +47,11 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       telephone: values.telephone,
       role: values.role,
     };
+    // Gate explicite sur `role` : RHF ne désinscrit pas le champ `photo` quand le
+    // FileInput est démonté (repassage Veilleur -> Adorateur avant soumission).
+    const photo = values.role === UserRole.VEILLEUR ? values.photo?.[0] : undefined;
     try {
-      const response = await registerUser(dto);
+      const response = await registerUser(dto, photo);
       onSuccess(response);
     } catch (error) {
       if (error instanceof ApiError) {
@@ -88,6 +93,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
         error={errors.role?.message}
         {...register("role")}
       />
+      {role === UserRole.VEILLEUR && (
+        <FileInput
+          label="Photo"
+          accept={PHOTO_ACCEPTED_MIME_TYPES.join(",")}
+          error={errors.photo?.message}
+          {...register("photo")}
+        />
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           label="Mot de passe"

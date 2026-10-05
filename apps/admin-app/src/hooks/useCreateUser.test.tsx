@@ -52,15 +52,39 @@ describe("hooks/useCreateUser (admin-app)", () => {
       role: UserRole.ADORATEUR,
     };
     act(() => {
-      result.current.mutate(dto);
+      result.current.mutate({ dto });
     });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
-    expect(createUser).toHaveBeenCalledWith(dto, expect.anything());
+    expect(createUser).toHaveBeenCalledWith(dto, undefined);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["users"] });
     expect(await screen.findByRole("status")).toHaveTextContent("Utilisateur créé.");
+  });
+
+  it("transmet la photo fournie à createUser()", async () => {
+    vi.mocked(createUser).mockResolvedValueOnce(created);
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+
+    const { result } = renderHook(() => useCreateUser(), { wrapper: buildWrapper(queryClient) });
+
+    const dto = {
+      email: "veilleur@example.com",
+      password: "Password1!",
+      nom: "Dupont",
+      prenoms: "Jean",
+      role: UserRole.VEILLEUR,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    act(() => {
+      result.current.mutate({ dto, photo });
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(createUser).toHaveBeenCalledWith(dto, photo);
   });
 
   it("affiche un toast d'erreur avec le message de l'ApiError quand createUser échoue", async () => {
@@ -71,11 +95,13 @@ describe("hooks/useCreateUser (admin-app)", () => {
 
     act(() => {
       result.current.mutate({
-        email: "nouveau@example.com",
-        password: "Password1!",
-        nom: "Dupont",
-        prenoms: "Jean",
-        role: UserRole.ADORATEUR,
+        dto: {
+          email: "nouveau@example.com",
+          password: "Password1!",
+          nom: "Dupont",
+          prenoms: "Jean",
+          role: UserRole.ADORATEUR,
+        },
       });
     });
 

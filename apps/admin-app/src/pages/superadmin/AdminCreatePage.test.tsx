@@ -11,7 +11,7 @@ vi.mock("../../hooks/useCreateUser");
 interface UserFormStubProps {
   mode: "create" | "edit";
   roleOptions: { value: UserRole; label: string }[];
-  onSubmit: (dto: CreateUserRequest) => void;
+  onSubmit: (dto: CreateUserRequest, photo?: File) => void;
   onCancel?: () => void;
 }
 
@@ -42,7 +42,7 @@ vi.mock("../../components/users/UserForm", () => ({
 
 function mockCreateUser(isPending = false, invokeOnSuccess = false) {
   const mutate = vi.fn(
-    (_dto: CreateUserRequest, options?: { onSuccess?: () => void }) => {
+    (_variables: { dto: CreateUserRequest; photo?: File }, options?: { onSuccess?: () => void }) => {
       if (invokeOnSuccess) {
         options?.onSuccess?.();
       }
@@ -96,11 +96,14 @@ describe("pages/superadmin/AdminCreatePage (admin-app)", () => {
 
     expect(mutate).toHaveBeenCalledWith(
       {
-        email: "nouvel-admin@example.com",
-        password: "Password1!",
-        nom: "Dupont",
-        prenoms: "Jean",
-        role: UserRole.ADMINISTRATEUR,
+        dto: {
+          email: "nouvel-admin@example.com",
+          password: "Password1!",
+          nom: "Dupont",
+          prenoms: "Jean",
+          role: UserRole.ADMINISTRATEUR,
+        },
+        photo: undefined,
       },
       expect.anything(),
     );

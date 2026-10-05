@@ -11,12 +11,15 @@ export default function AdminCreatePage() {
   const navigate = useNavigate();
   const createUser = useCreateUser();
 
-  function handleSubmit(dto: CreateUserRequest): void {
-    createUser.mutate(dto, {
-      onSuccess: () => {
-        void navigate("/administrateurs");
+  function handleSubmit(dto: CreateUserRequest, photo?: File): void {
+    createUser.mutate(
+      { dto, photo },
+      {
+        onSuccess: () => {
+          void navigate("/administrateurs");
+        },
       },
-    });
+    );
   }
 
   return (

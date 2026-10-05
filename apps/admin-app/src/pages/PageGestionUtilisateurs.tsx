@@ -29,12 +29,15 @@ export default function PageGestionUtilisateurs() {
     setPage(0);
   }
 
-  function handleCreateSubmit(dto: CreateUserRequest): void {
-    createUser.mutate(dto, {
-      onSuccess: () => {
-        setIsCreateModalOpen(false);
+  function handleCreateSubmit(dto: CreateUserRequest, photo?: File): void {
+    createUser.mutate(
+      { dto, photo },
+      {
+        onSuccess: () => {
+          setIsCreateModalOpen(false);
+        },
       },
-    });
+    );
   }
 
   return (

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { UserRole } from "../types/user";
 import {
   bookingSchema,
@@ -6,12 +7,34 @@ import {
   loginSchema,
   nomSchema,
   passwordSchema,
+  photoSchema,
   prenomsSchema,
   registerSchema,
   roleSchema,
   telephoneSchema,
   updateProfileSchema,
+  validatePhotoForRole,
 } from "./validators";
+
+function makeFileList(files: File[]): FileList {
+  return {
+    ...files,
+    length: files.length,
+    item: (index: number) => files[index] ?? null,
+    [Symbol.iterator]: files[Symbol.iterator].bind(files),
+  } as unknown as FileList;
+}
+
+function runValidatePhotoForRole(role: UserRole, photo: FileList | undefined) {
+  const issues: { message?: string; path: (string | number)[] }[] = [];
+  const ctx = {
+    addIssue: (issue: { message?: string; path?: (string | number)[] }) => {
+      issues.push({ message: issue.message, path: issue.path ?? [] });
+    },
+  } as unknown as z.RefinementCtx;
+  validatePhotoForRole(role, photo, ctx);
+  return issues;
+}
 
 describe("emailSchema", () => {
   it("accepte un email valide", () => {
@@ -88,6 +111,72 @@ describe("roleSchema", () => {
   });
 });
 
+describe("photoSchema", () => {
+  it("accepte undefined (champ optionnel)", () => {
+    expect(photoSchema.safeParse(undefined).success).toBe(true);
+  });
+
+  it("accepte une FileList", () => {
+    const file = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    expect(photoSchema.safeParse(makeFileList([file])).success).toBe(true);
+  });
+});
+
+describe("validatePhotoForRole", () => {
+  it("ne remonte aucune erreur quand le rôle n'est pas VEILLEUR, même sans photo", () => {
+    expect(runValidatePhotoForRole(UserRole.ADORATEUR, undefined)).toEqual([]);
+  });
+
+  it("ne remonte aucune erreur pour un rôle ADMINISTRATEUR sans photo", () => {
+    expect(runValidatePhotoForRole(UserRole.ADMINISTRATEUR, undefined)).toEqual([]);
+  });
+
+  it("exige une photo quand le rôle est VEILLEUR", () => {
+    const issues = runValidatePhotoForRole(UserRole.VEILLEUR, undefined);
+    expect(issues).toEqual([
+      { message: "La photo est obligatoire pour un compte Veilleur", path: ["photo"] },
+    ]);
+  });
+
+  it("exige une photo quand le rôle est VEILLEUR et la FileList est vide", () => {
+    const issues = runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([]));
+    expect(issues).toEqual([
+      { message: "La photo est obligatoire pour un compte Veilleur", path: ["photo"] },
+    ]);
+  });
+
+  it("rejette un type MIME non supporté pour un Veilleur", () => {
+    const file = new File(["contenu"], "photo.gif", { type: "image/gif" });
+    const issues = runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([file]));
+    expect(issues).toEqual([
+      { message: "Format de photo non supporté (jpeg ou png uniquement)", path: ["photo"] },
+    ]);
+  });
+
+  it("rejette une photo de plus de 5 Mo pour un Veilleur", () => {
+    const file = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 + 1 });
+    const issues = runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([file]));
+    expect(issues).toEqual([{ message: "La photo ne doit pas dépasser 5 Mo", path: ["photo"] }]);
+  });
+
+  it("accepte une photo jpeg valide de taille correcte pour un Veilleur", () => {
+    const file = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    expect(runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([file]))).toEqual([]);
+  });
+
+  it("accepte une photo png valide de taille correcte pour un Veilleur", () => {
+    const file = new File(["contenu"], "photo.png", { type: "image/png" });
+    expect(runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([file]))).toEqual([]);
+  });
+
+  it("accepte une photo exactement à 5 Mo (limite incluse)", () => {
+    const file = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    Object.defineProperty(file, "size", { value: 5 * 1024 * 1024 });
+    expect(runValidatePhotoForRole(UserRole.VEILLEUR, makeFileList([file]))).toEqual([]);
+  });
+});
+
 describe("loginSchema", () => {
   it("valide un couple email/password non vide", () => {
     const result = loginSchema.safeParse({ email: "a@b.com", password: "whatever" });
@@ -130,6 +219,44 @@ describe("registerSchema", () => {
 
   it("accepte un téléphone vide", () => {
     expect(registerSchema.safeParse({ ...base, telephone: "" }).success).toBe(true);
+  });
+
+  it("accepte un Adorateur sans photo", () => {
+    expect(registerSchema.safeParse({ ...base, role: UserRole.ADORATEUR }).success).toBe(true);
+  });
+
+  it("rejette un Veilleur sans photo", () => {
+    const result = registerSchema.safeParse({ ...base, role: UserRole.VEILLEUR });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.path[0] === "photo" &&
+            issue.message === "La photo est obligatoire pour un compte Veilleur",
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("accepte un Veilleur avec une photo jpeg valide", () => {
+    const file = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    const result = registerSchema.safeParse({
+      ...base,
+      role: UserRole.VEILLEUR,
+      photo: makeFileList([file]),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejette un Veilleur avec une photo de type non supporté", () => {
+    const file = new File(["contenu"], "photo.gif", { type: "image/gif" });
+    const result = registerSchema.safeParse({
+      ...base,
+      role: UserRole.VEILLEUR,
+      photo: makeFileList([file]),
+    });
+    expect(result.success).toBe(false);
   });
 });
 

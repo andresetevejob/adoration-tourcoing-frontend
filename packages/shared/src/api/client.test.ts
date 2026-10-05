@@ -107,6 +107,33 @@ describe("createApiClient", () => {
       expect(init.body).toBe(JSON.stringify({ description: "modifié" }));
     });
 
+    it("envoie un corps FormData tel quel, sans fixer de Content-Type", async () => {
+      fetchMock.mockResolvedValueOnce(fakeResponse({ status: 201, body: { id: "42" } }));
+      const client = createApiClient("http://api.test");
+      const formData = new FormData();
+      formData.append("email", "veilleur@example.com");
+      formData.append("photo", new File(["contenu"], "photo.jpg", { type: "image/jpeg" }));
+
+      const result = await client.post<{ id: string }>("/users", formData);
+
+      expect(result).toEqual({ id: "42" });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(init.method).toBe("POST");
+      expect(init.body).toBe(formData);
+      expect(init.headers).toBeUndefined();
+    });
+
+    it("continue d'envoyer du JSON avec Content-Type quand le body n'est pas un FormData", async () => {
+      fetchMock.mockResolvedValueOnce(fakeResponse({ status: 200, body: { id: "1" } }));
+      const client = createApiClient("http://api.test");
+
+      await client.put("/users/1", { email: "a@b.com" });
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(init.headers).toEqual({ "Content-Type": "application/json" });
+      expect(init.body).toBe(JSON.stringify({ email: "a@b.com" }));
+    });
+
     it("effectue un DELETE sans body et retourne undefined sur 204", async () => {
       fetchMock.mockResolvedValueOnce(fakeResponse({ status: 204 }));
       const client = createApiClient("http://api.test");
@@ -177,6 +204,34 @@ describe("createApiClient", () => {
       const [retryUrl, retryInit] = fetchMock.mock.calls[2] as [string, RequestInit];
       expect(retryUrl).toBe("http://api.test/protege");
       expect(retryInit.method).toBe("GET");
+    });
+
+    it("rejoue un corps FormData tel quel (non consommé) après un refresh réussi, toujours sans Content-Type", async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { code: "UNAUTHORIZED", message: "Expiré" } }),
+        )
+        .mockResolvedValueOnce(fakeResponse({ status: 200, body: {} }))
+        .mockResolvedValueOnce(fakeResponse({ status: 201, body: { id: "42" } }));
+
+      const client = createApiClient("http://api.test");
+      const formData = new FormData();
+      formData.append("email", "veilleur@example.com");
+      formData.append("photo", new File(["contenu"], "photo.jpg", { type: "image/jpeg" }));
+
+      const result = await client.post<{ id: string }>("/users", formData);
+
+      expect(result).toEqual({ id: "42" });
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      const [firstUrl, firstInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(firstUrl).toBe("http://api.test/users");
+      expect(firstInit.body).toBe(formData);
+      expect(firstInit.headers).toBeUndefined();
+      const [retryUrl, retryInit] = fetchMock.mock.calls[2] as [string, RequestInit];
+      expect(retryUrl).toBe("http://api.test/users");
+      expect(retryInit.method).toBe("POST");
+      expect(retryInit.body).toBe(formData);
+      expect(retryInit.headers).toBeUndefined();
     });
 
     it("appelle onUnauthorized et lève l'erreur originale si le refresh échoue", async () => {

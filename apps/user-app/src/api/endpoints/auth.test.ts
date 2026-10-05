@@ -61,6 +61,68 @@ describe("api/endpoints/auth (user-app)", () => {
     expect(result).toBe(authResponse);
   });
 
+  it("register() avec une photo construit un FormData avec tous les champs et poste dessus", async () => {
+    postMock.mockResolvedValueOnce(authResponse);
+
+    const dto = {
+      email: "veilleur@example.com",
+      password: "pw",
+      nom: "Dupont",
+      prenoms: "Jean",
+      telephone: "0612345678",
+      role: UserRole.VEILLEUR as const,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    const result = await register(dto, photo);
+
+    expect(postMock).toHaveBeenCalledTimes(1);
+    const [path, body, options] = postMock.mock.calls[0] as [string, FormData, unknown];
+    expect(path).toBe("/auth/register");
+    expect(options).toEqual({ skipAuthRetry: true });
+    expect(body).toBeInstanceOf(FormData);
+    expect(body.get("email")).toBe(dto.email);
+    expect(body.get("password")).toBe(dto.password);
+    expect(body.get("nom")).toBe(dto.nom);
+    expect(body.get("prenoms")).toBe(dto.prenoms);
+    expect(body.get("telephone")).toBe(dto.telephone);
+    expect(body.get("role")).toBe(dto.role);
+    expect(body.get("photo")).toBe(photo);
+    expect(result).toBe(authResponse);
+  });
+
+  it("register() sans telephone et avec une photo omet le champ telephone du FormData", async () => {
+    postMock.mockResolvedValueOnce(authResponse);
+
+    const dto = {
+      email: "veilleur@example.com",
+      password: "pw",
+      nom: "Dupont",
+      prenoms: "Jean",
+      role: UserRole.VEILLEUR as const,
+    };
+    const photo = new File(["contenu"], "photo.jpg", { type: "image/jpeg" });
+    await register(dto, photo);
+
+    const [, body] = postMock.mock.calls[0] as [string, FormData];
+    expect(body.has("telephone")).toBe(false);
+  });
+
+  it("register() sans photo reste un POST JSON identique à avant (non-régression)", async () => {
+    postMock.mockResolvedValueOnce(authResponse);
+
+    const dto = {
+      email: "adorateur@example.com",
+      password: "pw",
+      nom: "Dupont",
+      prenoms: "Jean",
+      telephone: "0612345678",
+      role: UserRole.ADORATEUR as const,
+    };
+    await register(dto);
+
+    expect(postMock).toHaveBeenCalledWith("/auth/register", dto, { skipAuthRetry: true });
+  });
+
   it("logout() poste sur /auth/logout sans skipAuthRetry", async () => {
     postMock.mockResolvedValueOnce(undefined);
 
