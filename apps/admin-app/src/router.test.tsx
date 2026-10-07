@@ -59,6 +59,26 @@ describe("router (admin-app) — test de fumée", () => {
     expect(await screen.findByRole("heading", { name: "Connexion" })).toBeInTheDocument();
   });
 
+  it("rend PageMotDePasseOublie sur '/mot-de-passe-oublie'", async () => {
+    await act(async () => {
+      await router.navigate("/mot-de-passe-oublie");
+    });
+    renderRouter();
+
+    expect(await screen.findByRole("heading", { name: "Mot de passe oublié" })).toBeInTheDocument();
+  });
+
+  it("rend PageReinitialisationMotDePasse sur '/reinitialiser-mot-de-passe'", async () => {
+    await act(async () => {
+      await router.navigate("/reinitialiser-mot-de-passe");
+    });
+    renderRouter();
+
+    expect(
+      await screen.findByRole("heading", { name: "Réinitialisation du mot de passe" }),
+    ).toBeInTheDocument();
+  });
+
   it("rend Page404 sur une route inconnue", async () => {
     await act(async () => {
       await router.navigate("/route-inexistante");
@@ -139,5 +159,33 @@ describe("router (admin-app) — test de fumée", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "Accès non autorisé" })).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige un administrateur déjà authentifié loin de /mot-de-passe-oublie vers /", async () => {
+    useAuthStore.getState().setUser(admin);
+    await act(async () => {
+      await router.navigate("/mot-de-passe-oublie");
+    });
+    act(() => {
+      renderRouter();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Gestion des utilisateurs" }),
+    ).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige un administrateur déjà authentifié loin de /reinitialiser-mot-de-passe vers /", async () => {
+    useAuthStore.getState().setUser(admin);
+    await act(async () => {
+      await router.navigate("/reinitialiser-mot-de-passe");
+    });
+    act(() => {
+      renderRouter();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Gestion des utilisateurs" }),
+    ).toBeInTheDocument();
   });
 });

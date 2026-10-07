@@ -4,12 +4,14 @@ import { UserRole } from "../types/user";
 import {
   bookingSchema,
   emailSchema,
+  forgotPasswordSchema,
   loginSchema,
   nomSchema,
   passwordSchema,
   photoSchema,
   prenomsSchema,
   registerSchema,
+  resetPasswordSchema,
   roleSchema,
   telephoneSchema,
   updateProfileSchema,
@@ -303,6 +305,64 @@ describe("updateProfileSchema", () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues.some((issue) => issue.path[0] === "telephone")).toBe(true);
+    }
+  });
+});
+
+describe("forgotPasswordSchema", () => {
+  it("valide un email bien formé", () => {
+    expect(forgotPasswordSchema.safeParse({ email: "adorateur@example.com" }).success).toBe(true);
+  });
+
+  it("rejette un email mal formé", () => {
+    const result = forgotPasswordSchema.safeParse({ email: "pas-un-email" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.path[0] === "email")).toBe(true);
+    }
+  });
+
+  it("rejette l'absence du champ email", () => {
+    expect(forgotPasswordSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("valide un nouveau mot de passe cohérent avec sa confirmation", () => {
+    const result = resetPasswordSchema.safeParse({
+      newPassword: "Azerty1!",
+      confirmPassword: "Azerty1!",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejette quand confirmPassword ne correspond pas à newPassword", () => {
+    const result = resetPasswordSchema.safeParse({
+      newPassword: "Azerty1!",
+      confirmPassword: "Autre1!",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.path).toEqual(["confirmPassword"]);
+    }
+  });
+
+  it("rejette un newPassword trop faible (règle passwordSchema)", () => {
+    const result = resetPasswordSchema.safeParse({
+      newPassword: "faible",
+      confirmPassword: "faible",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("n'exige pas de champ token (lu depuis l'URL, pas depuis le formulaire)", () => {
+    const result = resetPasswordSchema.safeParse({
+      newPassword: "Azerty1!",
+      confirmPassword: "Azerty1!",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("token");
     }
   });
 });

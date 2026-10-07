@@ -71,6 +71,26 @@ describe("router (user-app) — test de fumée", () => {
     expect(await screen.findByRole("heading", { name: "Connexion" })).toBeInTheDocument();
   });
 
+  it("rend PageMotDePasseOublie sur '/mot-de-passe-oublie'", async () => {
+    await act(async () => {
+      await router.navigate("/mot-de-passe-oublie");
+    });
+    renderRouter();
+
+    expect(await screen.findByRole("heading", { name: "Mot de passe oublié" })).toBeInTheDocument();
+  });
+
+  it("rend PageReinitialisationMotDePasse sur '/reinitialiser-mot-de-passe'", async () => {
+    await act(async () => {
+      await router.navigate("/reinitialiser-mot-de-passe");
+    });
+    renderRouter();
+
+    expect(
+      await screen.findByRole("heading", { name: "Réinitialisation du mot de passe" }),
+    ).toBeInTheDocument();
+  });
+
   it("rend la page d'inscription sur '/inscription'", async () => {
     await act(async () => {
       await router.navigate("/inscription");
@@ -186,5 +206,33 @@ describe("router (user-app) — test de fumée", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "Accès non autorisé" })).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige un utilisateur déjà authentifié loin de /mot-de-passe-oublie vers /", async () => {
+    useAuthStore.getState().setUser(adorateur);
+    await act(async () => {
+      await router.navigate("/mot-de-passe-oublie");
+    });
+    act(() => {
+      renderRouter();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: /Un cœur qui bat/, level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it("GuestRoute redirige un utilisateur déjà authentifié loin de /reinitialiser-mot-de-passe vers /", async () => {
+    useAuthStore.getState().setUser(adorateur);
+    await act(async () => {
+      await router.navigate("/reinitialiser-mot-de-passe");
+    });
+    act(() => {
+      renderRouter();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: /Un cœur qui bat/, level: 1 }),
+    ).toBeInTheDocument();
   });
 });

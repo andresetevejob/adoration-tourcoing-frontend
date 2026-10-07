@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserRole, StatutValidation, type AuthResponse } from "@chapelle/shared/types";
-import { login, logout, refresh } from "./auth";
+import { forgotPassword, login, logout, refresh, resetPassword } from "./auth";
 
 const { postMock } = vi.hoisted(() => ({ postMock: vi.fn() }));
 
@@ -60,5 +60,30 @@ describe("api/endpoints/auth (admin-app)", () => {
     expect(postMock).toHaveBeenCalledWith("/auth/refresh", undefined, {
       skipAuthRetry: true,
     });
+  });
+
+  it("forgotPassword() poste sur /auth/forgot-password avec skipAuthRetry et retourne la réponse", async () => {
+    postMock.mockResolvedValueOnce({ message: "Email envoyé si le compte existe." });
+
+    const result = await forgotPassword({ email: "admin@example.com" });
+
+    expect(postMock).toHaveBeenCalledWith(
+      "/auth/forgot-password",
+      { email: "admin@example.com" },
+      { skipAuthRetry: true },
+    );
+    expect(result).toEqual({ message: "Email envoyé si le compte existe." });
+  });
+
+  it("resetPassword() poste sur /auth/reset-password avec skipAuthRetry", async () => {
+    postMock.mockResolvedValueOnce(undefined);
+
+    await resetPassword({ token: "tok-123", newPassword: "Azerty1!" });
+
+    expect(postMock).toHaveBeenCalledWith(
+      "/auth/reset-password",
+      { token: "tok-123", newPassword: "Azerty1!" },
+      { skipAuthRetry: true },
+    );
   });
 });

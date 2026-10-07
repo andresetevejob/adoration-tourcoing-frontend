@@ -1,0 +1,51 @@
+--- a/openspec/specs/authentification-comptes/spec.md
++++ b/openspec/specs/authentification-comptes/spec.md
+@@ -52,3 +52,52 @@
+ WHEN l'erreur n'est pas une `ApiError` (cas générique, imprévu) THEN le comportement historique est
+ conservé : `Toast` d'erreur générique, inchangé.
+
+ > Périmètre gradué ici : uniquement l'affichage de l'erreur de soumission. Le reste du formulaire
+ > d'inscription (champs, validation, succès) reste non gradué, cf. note en tête de ce fichier.
++
++## Mot de passe oublié (demande + réinitialisation)
++
++Un utilisateur non connecté (`user-app` et `admin-app`) peut demander la réinitialisation de son mot
++de passe, puis en choisir un nouveau à partir d'un lien reçu par email.
++
++### Demande de réinitialisation
++**Route** : `/mot-de-passe-oublie` (publique, garde `GuestRoute`)
++
++WHEN l'utilisateur soumet son email THEN `POST /auth/forgot-password` est appelé et, **quelle que
++soit l'issue réelle** (compte inconnu, supprimé, Veilleur `EN_ATTENTE`/`REJETE`, ou compte `VALIDE`),
++le même message de confirmation générique est affiché : « Si un compte existe avec cette adresse, un
++email de réinitialisation a été envoyé. »
++
++WHY : FR-AUTH-2 — ne jamais révéler l'existence ou le statut d'un compte via ce flux
++(anti-énumération).
++
++### Réinitialisation
++**Route** : `/reinitialiser-mot-de-passe?token=...` (publique, garde `GuestRoute`)
++
++WHEN la page est chargée avec un paramètre `token` THEN un formulaire Nouveau mot de passe +
++Confirmation est affiché (même règle de robustesse que l'inscription : 8 caractères min., 1 chiffre,
++1 caractère spécial).
++
++WHEN le formulaire est soumis THEN `POST /auth/reset-password` est appelé avec `{ token,
++newPassword }`.
++
++WHEN la réponse est `204` THEN aucune connexion automatique n'est effectuée (le backend ne pose
++aucun cookie) : redirection vers `/connexion` avec un message de succès invitant à se connecter avec
++le nouveau mot de passe.
++
++WHEN la réponse est `401` (token invalide, expiré, déjà utilisé, ou utilisateur associé
++introuvable/supprimé) OU qu'aucun `token` n'est présent dans l'URL THEN un message générique
++d'erreur est affiché sur la page, sans distinction des cas, avec un lien vers
++`/mot-de-passe-oublie` pour redemander un email.
++
++WHY : cohérent avec le traitement existant du 401 de `/auth/login` (pas de distinction des causes
++d'échec exposée au frontend).
++
++### Implémentation
++`forgotPassword(dto)` / `resetPassword(dto)` (`api/endpoints/auth.ts`, `user-app` et `admin-app`)
++avec `skipAuthRetry: true` — mêmes exclusions refresh/retry/redirection 401 que `/auth/login`,
++`/auth/register`, `/auth/refresh` (endpoints publics, un 401 n'est pas lié à une session expirée).

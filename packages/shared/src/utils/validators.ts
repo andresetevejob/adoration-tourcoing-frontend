@@ -81,6 +81,20 @@ export const updateProfileSchema = z.object({
   telephone: telephoneSchema,
 });
 
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  });
+
 export const bookingSchema = z
   .object({
     idUtilisateur: z.string().optional(),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -63,6 +64,9 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         error={errors.password?.message}
         {...register("password")}
       />
+      <Link to="/mot-de-passe-oublie" className="text-sm font-medium text-gold-600 hover:underline">
+        Mot de passe oublié ?
+      </Link>
       {formError && (
         <p role="alert" className="text-sm text-red-600">
           {formError}

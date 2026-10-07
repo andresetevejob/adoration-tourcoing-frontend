@@ -614,6 +614,9 @@ servers:
 - url: http://localhost:8085
   description: Generated server url
 tags:
+- name: Authentification
+  description: Inscription, connexion, rafraichissement de session et mot de passe
+    oublie
 - name: Planning
   description: Consultation du planning d'adoration — par jour, par mois, ou sur
     un intervalle libre
@@ -913,6 +916,14 @@ paths:
         schema:
           type: string
           format: date-time
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - STANDARD
+          - INSTANTANEE
       - name: pageable
         in: query
         required: true
@@ -1022,6 +1033,60 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+  /api/v1/auth/forgot-password:
+    post:
+      tags:
+      - Authentification
+      summary: Demander la reinitialisation du mot de passe
+      description: Declenche l'envoi d'un email de reinitialisation si un compte
+        existant, non supprime et au statut VALIDE correspond a l'email fourni.
+        Reponse strictement identique (code et corps) que l'email soit inconnu,
+        associe a un compte supprime, a un compte VEILLEUR EN_ATTENTE/REJETE, ou
+        a un compte VALIDE - aucune information sur l'existence ou le statut du
+        compte n'est jamais revelee (FR-AUTH-2). Accès public, sans authentification
+        requise.
+      operationId: forgotPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+        required: true
+      responses:
+        '200':
+          description: Reponse systematique, quel que soit l'etat reel du compte
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ForgotPasswordResponse'
+  /api/v1/auth/reset-password:
+    post:
+      tags:
+      - Authentification
+      summary: Reinitialiser le mot de passe a partir d'un token recu par email
+      description: 'Valide le token de reinitialisation (usage unique, expire 1h
+        apres sa generation) et met a jour le mot de passe. Toutes les sessions
+        existantes de l''utilisateur sont revoquees. Aucune connexion automatique
+        n''est effectuee : aucun cookie n''est pose, l''utilisateur doit ensuite
+        appeler POST /auth/login avec son nouveau mot de passe. Accès public (le
+        token tient lieu de preuve de possession de la boite email).'
+      operationId: resetPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+        required: true
+      responses:
+        '204':
+          description: Mot de passe reinitialise avec succes, aucun contenu retourne
+        '401':
+          description: Token invalide, expire, deja utilise, ou utilisateur associe
+            introuvable/supprime - meme message generique dans tous ces cas
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/v1/planning:
     get:
       tags:
@@ -1473,6 +1538,11 @@ components:
           format: date-time
         estArchivee:
           type: boolean
+        type:
+          type: string
+          enum:
+          - STANDARD
+          - INSTANTANEE
     RegisterRequest:
       required:
       - email
@@ -1567,6 +1637,31 @@ components:
         email:
           type: string
         password:
+          type: string
+    ForgotPasswordRequest:
+      required:
+      - email
+      type: object
+      properties:
+        email:
+          type: string
+    ForgotPasswordResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    ResetPasswordRequest:
+      required:
+      - newPassword
+      - token
+      type: object
+      properties:
+        token:
+          type: string
+        newPassword:
+          maxLength: 2147483647
+          minLength: 8
+          pattern: ^(?=.*[0-9])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).+$
           type: string
     Pageable:
       type: object
@@ -1695,6 +1790,11 @@ components:
           type: boolean
         estAnonymise:
           type: boolean
+        type:
+          type: string
+          enum:
+          - STANDARD
+          - INSTANTANEE
     PageResponseBookingResponse:
       type: object
       properties:
@@ -1716,6 +1816,7 @@ components:
           format: int32
         last:
           type: boolean
+
 
 ```
 

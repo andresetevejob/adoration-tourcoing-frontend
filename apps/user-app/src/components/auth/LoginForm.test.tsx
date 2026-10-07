@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router";
 import { ApiError } from "@chapelle/shared/api";
 import { ToastProvider } from "@chapelle/shared/ui";
 import { StatutValidation, UserRole, type AuthResponse } from "@chapelle/shared/types";
@@ -39,17 +40,36 @@ function fillAndSubmit(email: string, password: string) {
   fireEvent.click(screen.getByRole("button", { name: "Se connecter" }));
 }
 
+/** `LoginForm` rend un `<Link>` (react-router) vers "Mot de passe oublié ?" : un
+ * contexte Router est désormais requis même en test isolé du composant. */
+function renderLoginForm(onSuccess: ReturnType<typeof vi.fn>) {
+  return render(
+    <MemoryRouter>
+      <ToastProvider>
+        <LoginForm onSuccess={onSuccess} />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
+}
+
 describe("components/auth/LoginForm (user-app)", () => {
+  it("affiche un lien 'Mot de passe oublié ?' vers /mot-de-passe-oublie", () => {
+    mockUseAuth(vi.fn());
+
+    renderLoginForm(vi.fn());
+
+    expect(screen.getByRole("link", { name: "Mot de passe oublié ?" })).toHaveAttribute(
+      "href",
+      "/mot-de-passe-oublie",
+    );
+  });
+
   it("appelle onSuccess avec la réponse quand login() réussit", async () => {
     const login = vi.fn().mockResolvedValueOnce(authResponse);
     mockUseAuth(login);
     const onSuccess = vi.fn();
 
-    render(
-      <ToastProvider>
-        <LoginForm onSuccess={onSuccess} />
-      </ToastProvider>,
-    );
+    renderLoginForm(onSuccess);
 
     fillAndSubmit("adorateur@example.com", "Azerty1!");
 
@@ -66,11 +86,7 @@ describe("components/auth/LoginForm (user-app)", () => {
     mockUseAuth(login);
     const onSuccess = vi.fn();
 
-    render(
-      <ToastProvider>
-        <LoginForm onSuccess={onSuccess} />
-      </ToastProvider>,
-    );
+    renderLoginForm(onSuccess);
 
     fillAndSubmit("adorateur@example.com", "Azerty1!");
 
@@ -86,11 +102,7 @@ describe("components/auth/LoginForm (user-app)", () => {
     mockUseAuth(login);
     const onSuccess = vi.fn();
 
-    render(
-      <ToastProvider>
-        <LoginForm onSuccess={onSuccess} />
-      </ToastProvider>,
-    );
+    renderLoginForm(onSuccess);
 
     fillAndSubmit("adorateur@example.com", "Azerty1!");
 
@@ -103,11 +115,7 @@ describe("components/auth/LoginForm (user-app)", () => {
     const login = vi.fn().mockRejectedValueOnce(new Error("Réseau indisponible"));
     mockUseAuth(login);
 
-    render(
-      <ToastProvider>
-        <LoginForm onSuccess={vi.fn()} />
-      </ToastProvider>,
-    );
+    renderLoginForm(vi.fn());
 
     fillAndSubmit("adorateur@example.com", "Azerty1!");
 
@@ -118,11 +126,7 @@ describe("components/auth/LoginForm (user-app)", () => {
     const login = vi.fn();
     mockUseAuth(login);
 
-    render(
-      <ToastProvider>
-        <LoginForm onSuccess={vi.fn()} />
-      </ToastProvider>,
-    );
+    renderLoginForm(vi.fn());
 
     fillAndSubmit("pas-un-email", "Azerty1!");
 

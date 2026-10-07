@@ -6,6 +6,8 @@ import { GuestRoute } from "./components/auth/GuestRoute";
 import PublicLayout from "./components/layout/PublicLayout";
 import AdminLayout from "./components/layout/AdminLayout";
 import PageConnexion from "./pages/PageConnexion";
+import PageMotDePasseOublie from "./pages/PageMotDePasseOublie";
+import PageReinitialisationMotDePasse from "./pages/PageReinitialisationMotDePasse";
 import PageMonCompte from "./pages/PageMonCompte";
 import PagePlanning from "./pages/PagePlanning";
 import Page403 from "./pages/Page403";
@@ -29,6 +31,22 @@ export const router = createBrowserRouter([
         element: (
           <GuestRoute>
             <PageConnexion />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/mot-de-passe-oublie",
+        element: (
+          <GuestRoute>
+            <PageMotDePasseOublie />
+          </GuestRoute>
+        ),
+      },
+      {
+        path: "/reinitialiser-mot-de-passe",
+        element: (
+          <GuestRoute>
+            <PageReinitialisationMotDePasse />
           </GuestRoute>
         ),
       },

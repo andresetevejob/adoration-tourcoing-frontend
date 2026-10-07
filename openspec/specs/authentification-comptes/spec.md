@@ -53,3 +53,56 @@ conservé : `Toast` d'erreur générique, inchangé.
 
 > Périmètre gradué ici : uniquement l'affichage de l'erreur de soumission. Le reste du formulaire
 > d'inscription (champs, validation, succès) reste non gradué, cf. note en tête de ce fichier.
+
+## Mot de passe oublié (demande + réinitialisation)
+
+Un utilisateur non connecté (`user-app` et `admin-app`) peut demander la réinitialisation de son mot
+de passe, puis en choisir un nouveau à partir d'un lien reçu par email.
+
+### Demande de réinitialisation
+**Route** : `/mot-de-passe-oublie` (publique, garde `GuestRoute`)
+
+WHEN l'utilisateur soumet son email THEN `POST /auth/forgot-password` est appelé et, **quelle que
+soit l'issue réelle** (compte inconnu, supprimé, Veilleur `EN_ATTENTE`/`REJETE`, ou compte `VALIDE`),
+le même message de confirmation générique est affiché, figé côté frontend (indépendant du corps de
+la réponse backend) : « Si un compte existe avec cette adresse, un email de réinitialisation a été
+envoyé. »
+
+WHEN l'appel échoue pour une raison technique (réseau, 5xx) THEN un `Toast` d'erreur générique est
+affiché à la place du message de confirmation (point ouvert documenté : léger écart par rapport à
+une application stricte de FR-AUTH-2 sur ce cas précis, jugé acceptable — l'échec technique ne
+révèle pas le statut du compte, seulement l'indisponibilité du service).
+
+WHY : FR-AUTH-2 — ne jamais révéler l'existence ou le statut d'un compte via ce flux
+(anti-énumération).
+
+### Réinitialisation
+**Route** : `/reinitialiser-mot-de-passe?token=...` (publique, garde `GuestRoute`)
+
+WHEN la page est chargée avec un paramètre `token` THEN un formulaire Nouveau mot de passe +
+Confirmation est affiché (même règle de robustesse que l'inscription : 8 caractères min., 1 chiffre,
+1 caractère spécial).
+
+WHEN le formulaire est soumis THEN `POST /auth/reset-password` est appelé avec `{ token,
+newPassword }` (`confirmPassword` n'est jamais transmis, cohérent avec `RegisterRequest`).
+
+WHEN la réponse est `204` THEN aucune connexion automatique n'est effectuée (le backend ne pose
+aucun cookie) : `Toast` de succès puis redirection vers `/connexion`.
+
+WHEN la réponse est `401` (token invalide, expiré, déjà utilisé, ou utilisateur associé
+introuvable/supprimé) OU qu'aucun `token` n'est présent dans l'URL THEN le formulaire est
+**remplacé** (pas de `FormAlert` dismissible au-dessus d'un formulaire laissé visible — resoumettre
+échouerait systématiquement) par un message générique d'erreur, avec un lien vers
+`/mot-de-passe-oublie` pour redemander un email.
+
+WHY : cohérent avec le traitement existant du 401 de `/auth/login` (pas de distinction des causes
+d'échec exposée au frontend).
+
+### Implémentation
+- `forgotPassword(dto)` / `resetPassword(dto)` (`api/endpoints/auth.ts`, `user-app` et `admin-app`)
+  avec `skipAuthRetry: true` — mêmes exclusions refresh/retry/redirection 401 que `/auth/login`,
+  `/auth/register`, `/auth/refresh` (endpoints publics, un 401 n'est pas lié à une session expirée).
+- Patron de composition « B » (présentationnel + hook `useMutation` + page orchestratrice, même
+  patron que `ContactForm`/`useSendContactMessage`/`PageContact`), pas `useAuth()` : ces actions ne
+  modifient jamais l'état de session (pas de `setUser`/`clear`).
+- Lien « Mot de passe oublié ? » sous le champ mot de passe de `LoginForm`, dans les deux apps.
