@@ -118,8 +118,8 @@ export function Footer() {
           <div>
             <h4 className="text-gold-400 font-serif text-base font-semibold tracking-wide mb-4">Contact</h4>
             <div className="space-y-3 text-sm text-ivory/50">
-              <p>35 Rue du Chevalier de la Barre</p>
-              <p>75018 Paris, France</p>
+              <p>18 Rue Faidherbe</p>
+              <p>59200 Tourcoing, France</p>
               <p className="text-ivory/60 mt-2">+33 1 53 41 89 00</p>
               <p className="text-ivory/60">contact@sacrecoeur-sanctuaire.fr</p>
             </div>
