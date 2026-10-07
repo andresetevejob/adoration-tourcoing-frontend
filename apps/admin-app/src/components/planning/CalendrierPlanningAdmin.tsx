@@ -6,7 +6,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import type { DateSelectArg, EventClickArg } from "@fullcalendar/core";
 import type { PlanningEntryResponse } from "@chapelle/shared/types";
 import { Spinner } from "@chapelle/shared/ui";
-import { diffJoursInclusif } from "@chapelle/shared/utils";
+import { diffJoursInclusif, exceedsMaxDuration } from "@chapelle/shared/utils";
 import type { PlanningPeriode } from "../../hooks/planningPeriode";
 import { mapPlanningEntriesToEvents } from "./planningEntries";
 import { renderPlanningEvent } from "./renderPlanningEvent";
@@ -81,7 +81,10 @@ export default function CalendrierPlanningAdmin({
       editable={false}
       selectable={Boolean(onSelectSlot)}
       selectOverlap={false}
-      selectAllow={(selectInfo) => selectInfo.start.getTime() >= Date.now()}
+      selectAllow={(selectInfo) =>
+        selectInfo.start.getTime() >= Date.now() &&
+        !exceedsMaxDuration(selectInfo.start.toISOString(), selectInfo.end.toISOString())
+      }
       select={onSelectSlot}
       eventClick={onEventClick}
       events={mapPlanningEntriesToEvents(entries)}

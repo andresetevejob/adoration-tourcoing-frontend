@@ -62,6 +62,15 @@ export function diffJoursInclusif(dateDebut: string, dateFin: string): number {
   return Math.round((fin.getTime() - debut.getTime()) / MS_PAR_JOUR) + 1;
 }
 
+/** `true` si la durée entre `dateDebut` et `dateFin` excède strictement `maxHeures`
+ *  (borne incluse : une durée de exactement `maxHeures` retourne `false`) — utilisé pour
+ *  rejeter les créneaux d'adoration de plus de 24h (sélection calendrier + filet de
+ *  sécurité à la confirmation). */
+export function exceedsMaxDuration(dateDebut: string, dateFin: string, maxHeures = 24): boolean {
+  const dureeMs = new Date(dateFin).getTime() - new Date(dateDebut).getTime();
+  return dureeMs > maxHeures * 3_600_000;
+}
+
 const parisDateTimePartFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,
   year: "numeric",

@@ -1,0 +1,28 @@
+--- a/openspec/specs/reservation-adoration/spec.md
++++ b/openspec/specs/reservation-adoration/spec.md
+@@ -54,3 +54,27 @@
+ Le contrat `POST /bookings` doit accepter un `dateDebut`/`dateFin` avec un offset non-`Z`
+ (`+01:00`/`+02:00`) — vérification à faire côté backend avant déploiement (hors périmètre de ce
+ repo frontend).
++
++## Durée maximale d'un créneau (24h)
++
++Un créneau d'adoration ne peut excéder 24 heures (`dateFin - dateDebut ≤ 24h`, borne incluse).
++
++WHEN un utilisateur sélectionne une plage sur le calendrier (`CalendrierReservations.tsx` côté
++user-app, `CalendrierPlanningAdmin.tsx` côté admin-app) dont la durée dépasse 24h (notamment en vue
++`dayGrid` mois/intervalle, par glisser-déposer sur plusieurs jours) THEN la sélection est rejetée
++(`selectAllow`) : aucun formulaire de réservation ne s'ouvre, identique au rejet déjà appliqué pour
++une sélection dans le passé.
++
++WHEN, par un autre chemin que le drag-select du calendrier, un `slot` de plus de 24h parvient malgré
++tout jusqu'à `ReservationConfirmModal` THEN la confirmation est bloquée et un message d'erreur est
++affiché (filet de sécurité, même logique défensive que la vérification du délai d'annulation ≥24h).
++
++WHY : aucune règle de durée maximale n'existe dans le swagger (`CreateBookingRequest` ne la porte
++pas) ; c'est une règle métier frontend pure, en attente de confirmation/alignement côté backend.
++
++### Implémentation
++`exceedsMaxDuration(dateDebut, dateFin, maxHeures = 24): boolean`
++(`packages/shared/src/utils/formatters.ts`), utilisée par les deux points de vérification ci-dessus
++dans les deux applications.

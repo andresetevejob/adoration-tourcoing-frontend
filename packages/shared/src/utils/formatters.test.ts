@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   diffJoursInclusif,
+  exceedsMaxDuration,
   formatDate,
   formatDateTime,
   formatTime,
@@ -83,6 +84,25 @@ describe("diffJoursInclusif", () => {
 
   it("retourne une valeur négative sans lever d'erreur quand dateFin précède dateDebut", () => {
     expect(diffJoursInclusif("2026-01-05", "2026-01-01")).toBe(-3);
+  });
+});
+
+describe("exceedsMaxDuration", () => {
+  it("retourne false pour une durée courte (1h)", () => {
+    expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z")).toBe(false);
+  });
+
+  it("retourne false pour une durée de exactement 24h (borne incluse)", () => {
+    expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-02T10:00:00Z")).toBe(false);
+  });
+
+  it("retourne true pour une durée dépassant 24h d'une seconde", () => {
+    expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-02T10:00:01Z")).toBe(true);
+  });
+
+  it("applique un maxHeures personnalisé", () => {
+    expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z", 1)).toBe(false);
+    expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-01T11:00:01Z", 1)).toBe(true);
   });
 });
 
