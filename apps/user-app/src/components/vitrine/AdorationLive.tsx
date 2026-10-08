@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useStatutAdorationDirect } from "../../hooks/useStatutAdorationDirect";
 
 /** Date de départ du récit fictif du gabarit legacy (reprise telle quelle, cf. conception
  *  U8 §4, point ouvert 1) — à remplacer par la date réelle de la Chapelle du Vœux. */
@@ -6,6 +7,7 @@ const ADORATION_START = new Date("1885-08-01T00:00:00");
 
 export function AdorationLive() {
   const [time, setTime] = useState(new Date());
+  const { enCours } = useStatutAdorationDirect();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,19 +33,28 @@ export function AdorationLive() {
       </div>
 
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold-500/10 border border-gold-500/30 mb-6">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-400" />
-          </span>
-          <span className="text-gold-300 text-xs tracking-[0.25em] uppercase font-medium">En ce moment</span>
-        </div>
+        {enCours ? (
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gold-500/10 border border-gold-500/30 mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-gold-400" />
+            </span>
+            <span className="text-gold-300 text-xs tracking-[0.25em] uppercase font-medium">En ce moment</span>
+          </div>
+        ) : (
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-ivory/5 border border-ivory/10 mb-6">
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-ivory/30" />
+            <span className="text-ivory/40 text-xs tracking-[0.25em] uppercase font-medium">En attente</span>
+          </div>
+        )}
 
         <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-ivory mb-4">
-          Un veilleur prie en cet instant
+          {enCours ? "Un veilleur prie en cet instant" : "Aucun veilleur n'est présent à l'instant"}
         </h2>
         <p className="text-ivory/50 max-w-xl mx-auto mb-12 leading-relaxed">
-          Devant le Saint-Sacrement exposé jour et nuit, la chaîne de prière n'a jamais été interrompue depuis 1885.
+          {enCours
+            ? "Devant le Saint-Sacrement exposé jour et nuit, la chaîne de prière n'a jamais été interrompue depuis 1885."
+            : "Soyez le prochain à rejoindre la chaîne de prière ininterrompue depuis 1885."}
         </p>
 
         <div className="inline-flex items-baseline gap-1 sm:gap-2 mb-12" role="timer" aria-label="Heure actuelle">
