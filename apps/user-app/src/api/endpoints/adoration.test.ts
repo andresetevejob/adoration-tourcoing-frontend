@@ -27,7 +27,7 @@ describe("api/endpoints/adoration (user-app)", () => {
 
     const result = await getStatutAdorationDirect();
 
-    expect(getMock).toHaveBeenCalledWith("/adoration/en-cours");
+    expect(getMock).toHaveBeenCalledWith("/adoration/en-cours", undefined, { skipAuthRetry: true });
     expect(result).toBe(response);
   });
 });

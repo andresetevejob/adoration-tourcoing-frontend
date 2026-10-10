@@ -33,7 +33,7 @@ describe("api/endpoints/annonces (user-app)", () => {
 
     const result = await listAnnonces({ statut: StatutAnnonce.PUBLIE });
 
-    expect(getMock).toHaveBeenCalledWith("/annonces", { statut: StatutAnnonce.PUBLIE });
+    expect(getMock).toHaveBeenCalledWith("/annonces", { statut: StatutAnnonce.PUBLIE }, { skipAuthRetry: true });
     expect(result).toBe(annonces);
   });
 
@@ -42,6 +42,6 @@ describe("api/endpoints/annonces (user-app)", () => {
 
     await listAnnonces({});
 
-    expect(getMock).toHaveBeenCalledWith("/annonces", { statut: undefined });
+    expect(getMock).toHaveBeenCalledWith("/annonces", { statut: undefined }, { skipAuthRetry: true });
   });
 });

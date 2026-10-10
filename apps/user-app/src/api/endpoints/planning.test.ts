@@ -48,11 +48,15 @@ describe("api/endpoints/planning (user-app)", () => {
 
     const result = await getPlanning({ date: "2026-01-01", page: 0, size: 20 });
 
-    expect(getMock).toHaveBeenCalledWith("/planning", {
-      date: "2026-01-01",
-      page: 0,
-      size: 20,
-    });
+    expect(getMock).toHaveBeenCalledWith(
+      "/planning",
+      {
+        date: "2026-01-01",
+        page: 0,
+        size: 20,
+      },
+      { skipAuthRetry: true },
+    );
     expect(result).toBe(page);
   });
 
@@ -61,11 +65,15 @@ describe("api/endpoints/planning (user-app)", () => {
 
     await getPlanning({});
 
-    expect(getMock).toHaveBeenCalledWith("/planning", {
-      date: undefined,
-      page: undefined,
-      size: undefined,
-    });
+    expect(getMock).toHaveBeenCalledWith(
+      "/planning",
+      {
+        date: undefined,
+        page: undefined,
+        size: undefined,
+      },
+      { skipAuthRetry: true },
+    );
   });
 
   describe("getPlanningMensuel", () => {
@@ -81,12 +89,16 @@ describe("api/endpoints/planning (user-app)", () => {
 
       const result = await getPlanningMensuel({ annee: 2026, mois: 3 });
 
-      expect(getMock).toHaveBeenCalledWith("/planning/mensuel", {
-        annee: 2026,
-        mois: 3,
-        page: 0,
-        size: 100,
-      });
+      expect(getMock).toHaveBeenCalledWith(
+        "/planning/mensuel",
+        {
+          annee: 2026,
+          mois: 3,
+          page: 0,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
       expect(result.content).toEqual([entryWithId("e1")]);
       expect(result.last).toBe(true);
     });
@@ -113,18 +125,28 @@ describe("api/endpoints/planning (user-app)", () => {
       const result = await getPlanningMensuel({ annee: 2026, mois: 3 });
 
       expect(getMock).toHaveBeenCalledTimes(2);
-      expect(getMock).toHaveBeenNthCalledWith(1, "/planning/mensuel", {
-        annee: 2026,
-        mois: 3,
-        page: 0,
-        size: 100,
-      });
-      expect(getMock).toHaveBeenNthCalledWith(2, "/planning/mensuel", {
-        annee: 2026,
-        mois: 3,
-        page: 1,
-        size: 100,
-      });
+      expect(getMock).toHaveBeenNthCalledWith(
+        1,
+        "/planning/mensuel",
+        {
+          annee: 2026,
+          mois: 3,
+          page: 0,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
+      expect(getMock).toHaveBeenNthCalledWith(
+        2,
+        "/planning/mensuel",
+        {
+          annee: 2026,
+          mois: 3,
+          page: 1,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
       expect(result.content.map((e) => e.id)).toEqual(["e1", "e2", "e3"]);
       expect(result.totalElements).toBe(3);
       expect(result.last).toBe(true);
@@ -161,12 +183,16 @@ describe("api/endpoints/planning (user-app)", () => {
 
       const result = await getPlanningIntervalle({ dateDebut: "2026-01-01", dateFin: "2026-01-10" });
 
-      expect(getMock).toHaveBeenCalledWith("/planning/intervalle", {
-        dateDebut: "2026-01-01",
-        dateFin: "2026-01-10",
-        page: 0,
-        size: 100,
-      });
+      expect(getMock).toHaveBeenCalledWith(
+        "/planning/intervalle",
+        {
+          dateDebut: "2026-01-01",
+          dateFin: "2026-01-10",
+          page: 0,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
       expect(result.content).toEqual([entryWithId("e1")]);
     });
 
@@ -192,18 +218,28 @@ describe("api/endpoints/planning (user-app)", () => {
       const result = await getPlanningIntervalle({ dateDebut: "2026-01-01", dateFin: "2026-01-10" });
 
       expect(getMock).toHaveBeenCalledTimes(2);
-      expect(getMock).toHaveBeenNthCalledWith(1, "/planning/intervalle", {
-        dateDebut: "2026-01-01",
-        dateFin: "2026-01-10",
-        page: 0,
-        size: 100,
-      });
-      expect(getMock).toHaveBeenNthCalledWith(2, "/planning/intervalle", {
-        dateDebut: "2026-01-01",
-        dateFin: "2026-01-10",
-        page: 1,
-        size: 100,
-      });
+      expect(getMock).toHaveBeenNthCalledWith(
+        1,
+        "/planning/intervalle",
+        {
+          dateDebut: "2026-01-01",
+          dateFin: "2026-01-10",
+          page: 0,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
+      expect(getMock).toHaveBeenNthCalledWith(
+        2,
+        "/planning/intervalle",
+        {
+          dateDebut: "2026-01-01",
+          dateFin: "2026-01-10",
+          page: 1,
+          size: 100,
+        },
+        { skipAuthRetry: true },
+      );
       expect(result.content.map((e) => e.id)).toEqual(["e1", "e2"]);
       expect(result.totalElements).toBe(2);
       expect(result.last).toBe(true);

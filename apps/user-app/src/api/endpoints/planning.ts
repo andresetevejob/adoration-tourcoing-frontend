@@ -19,11 +19,15 @@ export interface GetPlanningIntervalleParams {
 
 /** GET /planning?date=&page=&size= — endpoint public, aucune garde d'authentification. */
 export function getPlanning(params: GetPlanningParams): Promise<PageResponse<PlanningEntryResponse>> {
-  return apiClient.get<PageResponse<PlanningEntryResponse>>("/planning", {
-    date: params.date,
-    page: params.page,
-    size: params.size,
-  });
+  return apiClient.get<PageResponse<PlanningEntryResponse>>(
+    "/planning",
+    {
+      date: params.date,
+      page: params.page,
+      size: params.size,
+    },
+    { skipAuthRetry: true },
+  );
 }
 
 const PLANNING_AGGREGATE_PAGE_SIZE = 100;
@@ -59,12 +63,16 @@ export function getPlanningMensuel(
   params: GetPlanningMensuelParams,
 ): Promise<PageResponse<PlanningEntryResponse>> {
   return fetchAllPlanningPages((page) =>
-    apiClient.get<PageResponse<PlanningEntryResponse>>("/planning/mensuel", {
-      annee: params.annee,
-      mois: params.mois,
-      page,
-      size: PLANNING_AGGREGATE_PAGE_SIZE,
-    }),
+    apiClient.get<PageResponse<PlanningEntryResponse>>(
+      "/planning/mensuel",
+      {
+        annee: params.annee,
+        mois: params.mois,
+        page,
+        size: PLANNING_AGGREGATE_PAGE_SIZE,
+      },
+      { skipAuthRetry: true },
+    ),
   );
 }
 
@@ -73,11 +81,15 @@ export function getPlanningIntervalle(
   params: GetPlanningIntervalleParams,
 ): Promise<PageResponse<PlanningEntryResponse>> {
   return fetchAllPlanningPages((page) =>
-    apiClient.get<PageResponse<PlanningEntryResponse>>("/planning/intervalle", {
-      dateDebut: params.dateDebut,
-      dateFin: params.dateFin,
-      page,
-      size: PLANNING_AGGREGATE_PAGE_SIZE,
-    }),
+    apiClient.get<PageResponse<PlanningEntryResponse>>(
+      "/planning/intervalle",
+      {
+        dateDebut: params.dateDebut,
+        dateFin: params.dateFin,
+        page,
+        size: PLANNING_AGGREGATE_PAGE_SIZE,
+      },
+      { skipAuthRetry: true },
+    ),
   );
 }

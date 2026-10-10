@@ -23,6 +23,6 @@ describe("api/endpoints/contact (user-app)", () => {
 
     await sendContactMessage(dto);
 
-    expect(postMock).toHaveBeenCalledWith("/contact", dto);
+    expect(postMock).toHaveBeenCalledWith("/contact", dto, { skipAuthRetry: true });
   });
 });
