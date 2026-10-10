@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { EventContentArg } from "@fullcalendar/core";
 import { UserRole } from "@chapelle/shared/types";
 import { Badge } from "@chapelle/shared/ui";
+import { formatTime } from "@chapelle/shared/utils";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.ADORATEUR]: "Adorateur",
@@ -16,15 +17,25 @@ const ROLE_LABELS: Record<UserRole, string> = {
  * `extendedProps.isMine` (toujours faux côté admin-app), et un badge `roleUtilisateur`
  * pour distinguer un Veilleur d'un Administrateur bénéficiaire d'un coup d'œil. N'affiche
  * jamais de bouton d'action (aucune annulation en U2, cf. conception U2 §6).
+ *
+ * En vue "Mois"/"Intervalle", affiche la plage `HH:mm – HH:mm` (début ET fin), construite
+ * depuis `arg.event.start`/`arg.event.end` plutôt que le seul `arg.timeText` (début) fourni
+ * par FullCalendar — un créneau reste toujours sur un seul jour calendaire (garanti côté
+ * backend), donc pas de variante `dd/MM` à gérer. En vue "Jour" (`timeGridDay`), la grille
+ * horaire rend déjà visuellement la durée : on garde `arg.timeText` pour éviter la redondance.
  */
 export function renderPlanningEvent(arg: EventContentArg): ReactNode {
   const isMine = Boolean(arg.event.extendedProps.isMine);
   const roleUtilisateur = arg.event.extendedProps.roleUtilisateur as UserRole | undefined;
+  const timeText =
+    arg.view.type !== "timeGridDay" && arg.event.start && arg.event.end
+      ? `${formatTime(arg.event.start)} – ${formatTime(arg.event.end)}`
+      : arg.timeText;
 
   return (
     <div className="flex flex-col gap-1 overflow-hidden px-1 py-0.5 text-xs">
       <div className="flex items-center gap-1">
-        <span className="font-medium">{arg.timeText}</span>
+        <span className="font-medium">{timeText}</span>
         <span className="truncate">{arg.event.title}</span>
       </div>
       <div className="flex items-center gap-1">

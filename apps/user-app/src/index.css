@@ -5,3 +5,4 @@
 @source "../../../packages/shared/src";
 @import "../../../packages/shared/src/ui/theme.css";
 @import "../../../packages/shared/src/ui/react-datepicker-overrides.css";
+@import "../../../packages/shared/src/ui/fullcalendar-overrides.css";

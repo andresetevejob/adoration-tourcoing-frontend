@@ -91,11 +91,41 @@ type PlanningPeriode =
   réel constaté, non détectable par les tests automatisés jsdom qui ne simulent pas la peinture/
   l'empilement CSS réels).
 
+## Affichage des créneaux (`renderPlanningEvent`)
+
+Composant dupliqué intentionnellement dans les deux apps (`apps/user-app/src/components/agenda/
+renderPlanningEvent.tsx`, `apps/admin-app/src/components/planning/renderPlanningEvent.tsx`), même
+raison que le reste de cette spec (pas de package partagé pour ces composants).
+
+### Plage horaire affichée
+
+WHEN le mode est "Mois" ou "Intervalle" (vue FullCalendar différente de `timeGridDay`) THEN l'heure
+affichée sur le créneau est la plage complète `HH:mm – HH:mm` (début **et** fin), calculée depuis
+`arg.event.start`/`arg.event.end` (`formatTime`, fuseau Europe/Paris) — pas seulement le début
+(`arg.timeText` fourni par défaut par FullCalendar).
+
+WHEN le mode est "Jour" (`timeGridDay`) THEN l'heure affichée reste `arg.timeText` (début seul) : la
+grille horaire rend déjà visuellement la durée du créneau, afficher la plage en texte serait redondant.
+
+WHY : un créneau d'adoration reste toujours sur un seul jour calendaire (garanti côté backend), donc
+aucune variante de format `dd/MM` n'est nécessaire pour distinguer un éventuel chevauchement de
+minuit.
+
+### Surlignage "Ma réservation" (`user-app` uniquement)
+
+WHEN `extendedProps.isMine` est vrai (`user-app` uniquement — toujours `false` côté `admin-app`, cf.
+Hors périmètre) THEN le créneau est surligné visuellement : fond `gold-100`/bordure `gold-400`
+(`.fc-event.planning-event--mine`, `packages/shared/src/ui/fullcalendar-overrides.css`, importé
+uniquement par `apps/user-app/src/index.css`), en complément du badge texte « Ma réservation »
+existant (la couleur seule ne suffit pas comme signal d'accessibilité — WCAG 1.4.1).
+
 ## Hors périmètre de cette spec
 
 - Format de date à la création d'une réservation (`CreateBookingRequest.dateDebut`/`dateFin`) :
   voir `openspec/specs/reservation-adoration/spec.md`.
 - Anonymisation des identités selon le rôle consultant, actions de réservation/annulation sur le
   calendrier : comportement déjà en place, non modifié par cette spec, non détaillé ici plus avant
-  faute de spec source dédiée existante — cf. code (`renderPlanningEvent.tsx`, `mapPlanningEntriesToEvents`)
+  faute de spec source dédiée existante — cf. code (`mapPlanningEntriesToEvents`)
   et `aidlc-docs/construction/plans/u2-agenda-planning-design.md`/`u3-reservation-annulation-design.md`.
+- Badge rôle/« Ma réservation » (texte), titre du créneau (identité ou "Créneau réservé") : rendu déjà
+  en place, non modifié par ce qui précède, cf. code.
