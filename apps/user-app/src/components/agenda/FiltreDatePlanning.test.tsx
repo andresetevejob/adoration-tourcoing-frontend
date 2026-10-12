@@ -105,7 +105,9 @@ describe("FiltreDatePlanning (user-app)", () => {
         />,
       );
 
-      expect(screen.getByLabelText("Vue")).toHaveValue("intervalle");
+      // Pas d'assertion sur la valeur du Select "Vue" : l'option "intervalle" est
+      // temporairement retirée de `MODE_OPTIONS`, un `<select>` natif sans `<option>`
+      // correspondante à sa `value` ne reflète pas cette valeur dans le DOM.
       expect(screen.getByLabelText("Date de début")).toHaveValue("2026-01-01");
       expect(screen.getByLabelText("Date de fin")).toHaveValue("2026-01-05");
     });
@@ -175,7 +177,10 @@ describe("FiltreDatePlanning (user-app)", () => {
       });
     });
 
-    it("passer de jour à intervalle calcule une valeur par défaut sensée (aujourd'hui-aujourd'hui)", () => {
+    // Option "Intervalle" temporairement retirée du Select "Vue" (réactivation prévue plus
+    // tard) : ce test simule une sélection via le dropdown, impossible tant que l'option n'y
+    // figure pas (`fireEvent.change` sur une valeur sans `<option>` correspondante).
+    it.skip("passer de jour à intervalle calcule une valeur par défaut sensée (aujourd'hui-aujourd'hui)", () => {
       const onChange = vi.fn<(value: PlanningPeriode) => void>();
       render(<FiltreDatePlanning value={{ mode: "jour", date: "2026-01-01" }} onChange={onChange} />);
 

@@ -13,10 +13,12 @@ export interface FiltreDatePlanningProps {
   onChange: (value: PlanningPeriode) => void;
 }
 
+/** Mode "Intervalle" temporairement retiré du sélecteur (réactivation prévue plus tard) — le
+ *  reste de la logique (validation, état `draftIntervalle`, rendu conditionnel) est conservé
+ *  intact, seule l'option disparaît du `Select` "Vue". */
 const MODE_OPTIONS = [
   { value: "jour", label: "Jour" },
   { value: "mois", label: "Mois" },
-  { value: "intervalle", label: "Intervalle" },
 ];
 
 /** Validation client du plafond `MAX_INTERVALLE_JOURS` sur le mode "Intervalle", en

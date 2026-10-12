@@ -45,7 +45,14 @@ type PlanningPeriode =
 - Source de données : `GET /planning/mensuel?annee=&mois=`.
 - Vue FullCalendar : `dayGridMonth`.
 
-### Mode Intervalle
+### Mode Intervalle (temporairement retiré du sélecteur "Vue")
+
+> **Retiré de l'UI depuis 2026-10-12, réactivation prévue plus tard.** L'option "Intervalle" a été
+> retirée de `MODE_OPTIONS` (`FiltreDatePlanning.tsx`, dupliqué dans les deux apps) : impossible de
+> l'atteindre via le `Select`. Tout le reste décrit ci-dessous (logique, validation, endpoint,
+> vue FullCalendar) reste intact dans le code, inchangé, prêt à être réactivé en remettant
+> `{ value: "intervalle", label: "Intervalle" }` dans `MODE_OPTIONS`.
+
 - Contrôle : deux `<Input type="date">` (début/fin), avec état local (brouillon) : la valeur n'est
   propagée au parent (et ne déclenche une requête) que lorsque la combinaison est valide.
 - Validation client (`validateIntervalle`, exportée et testable) : les deux dates sont requises,
