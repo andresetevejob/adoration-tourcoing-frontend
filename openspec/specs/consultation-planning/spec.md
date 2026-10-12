@@ -119,6 +119,26 @@ Hors périmètre) THEN le créneau est surligné visuellement : fond `gold-100`/
 uniquement par `apps/user-app/src/index.css`), en complément du badge texte « Ma réservation »
 existant (la couleur seule ne suffit pas comme signal d'accessibilité — WCAG 1.4.1).
 
+### Surlignage de tous les créneaux réservés en vue Mois (`user-app` et `admin-app`)
+
+WHEN le mode est "Mois" (`dayGridMonth`) THEN chaque créneau affiché — quel que soit son propriétaire,
+anonymisé ou non — est encadré visuellement (fond `gold-100`/bordure `gold-400`), pour distinguer au
+premier coup d'œil les créneaux réservés des jours vides dans la grille du mois. But : lisibilité de
+la densité de réservations sur le mois, pas un signal propre à l'utilisateur connecté (contrairement à
+"Ma réservation" ci-dessus).
+
+Implémentation : règle CSS scopée à la vue (`.fc-dayGridMonth-view .fc-event`,
+`packages/shared/src/ui/fullcalendar-overrides.css`), s'appuyant sur la classe que FullCalendar pose
+lui-même sur le conteneur de la vue active (`.fc-view.fc-dayGridMonth-view`) — aucune donnée par
+créneau n'est nécessaire, donc aucun changement dans `mapPlanningEntryToEvent`/
+`mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Jamais actif en vue "Jour"
+(`fc-timeGridDay-view`) ni "Intervalle" (vue `dayGrid` custom, classe de vue différente) : seule la
+vue Mois est concernée.
+
+Un créneau qui est à la fois "Ma réservation" et affiché en vue Mois cumule les deux règles CSS (même
+déclarations, pas de conflit visuel) ; le badge texte « Ma réservation » reste le seul signal qui
+distingue ce créneau des autres dans cette vue.
+
 ## Hors périmètre de cette spec
 
 - Format de date à la création d'une réservation (`CreateBookingRequest.dateDebut`/`dateFin`) :
