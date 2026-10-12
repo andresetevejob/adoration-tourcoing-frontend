@@ -106,3 +106,22 @@ d'échec exposée au frontend).
   patron que `ContactForm`/`useSendContactMessage`/`PageContact`), pas `useAuth()` : ces actions ne
   modifient jamais l'état de session (pas de `setUser`/`clear`).
 - Lien « Mot de passe oublié ? » sous le champ mot de passe de `LoginForm`, dans les deux apps.
+
+## Déconnexion
+
+WHEN `useAuthStore.getState().clear()` est appelé (logout explicite via `useAuth().logout()`, ou 401
+forcé via `onUnauthorized` dans `api/client.ts`) THEN, en plus de réinitialiser l'état de session
+(`user: null`, `isAuthenticated: false`), **le cache TanStack Query est entièrement vidé**
+(`queryClient.clear()`, appelé depuis `store/authStore.ts`, même structure dupliquée dans les deux
+apps).
+
+WHY : plusieurs pages (ex. `/agenda`, publique, sans garde de route) restent montées après une
+déconnexion — sans ce vidage, les données déjà en cache (potentiellement non anonymisées pour
+l'utilisateur qui vient de se déconnecter, via `isMine`/`estAnonymise=false` sur sa propre
+réservation) resteraient affichées à l'écran après la déconnexion jusqu'à expiration du `staleTime`
+ou un refetch — violation de l'invariant selon lequel un visiteur anonyme ne doit jamais voir
+d'identité associée à un créneau (bug corrigé le 2026-10-12).
+
+Centralisé dans `authStore.clear()` plutôt que dupliqué à chaque site appelant (`useAuth.ts`,
+`api/client.ts`) : point d'entrée unique de toute déconnexion, garantit qu'aucun chemin ne peut
+l'oublier.

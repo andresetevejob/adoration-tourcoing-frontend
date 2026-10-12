@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { UserResponse } from "@chapelle/shared/types";
+import { queryClient } from "../lib/queryClient";
 
 export interface AuthState {
   user: UserResponse | null;
@@ -36,6 +37,13 @@ export const useAuthStore = create<AuthState>()(
         set({ user, isAuthenticated: user !== null });
       },
       clear: () => {
+        // `clear()` est le point d'entrée unique de toute déconnexion (logout
+        // explicite ET 401 forcé via `onUnauthorized`). C'est donc le bon endroit
+        // pour vider le cache TanStack Query : sans ça, des données déjà chargées
+        // en tant qu'utilisateur authentifié (ex. créneau non anonymisé de
+        // l'utilisateur) resteraient affichées après la déconnexion sur une route
+        // publique encore montée (ex. `/agenda`).
+        queryClient.clear();
         set({ user: null, isAuthenticated: false });
       },
     }),

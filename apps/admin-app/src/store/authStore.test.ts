@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StatutValidation, UserRole, type UserResponse } from "@chapelle/shared/types";
 
+const queryClientClearMock = vi.fn();
+
+// `../lib/queryClient` est mocké car `vi.resetModules()` (utilisé dans `beforeEach`
+// ci-dessous pour réimporter `./authStore` à l'état initial) créerait sinon une
+// nouvelle instance de QueryClient à chaque test, différente de celle importée
+// statiquement ici.
+vi.mock("../lib/queryClient", () => ({
+  queryClient: { clear: queryClientClearMock },
+}));
+
 const STORAGE_KEY = "chapelle-admin-auth-store";
 
 const user: UserResponse = {
@@ -18,6 +28,7 @@ describe("store/authStore (admin-app)", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.resetModules();
+    queryClientClearMock.mockClear();
   });
 
   it("utilise la clé de storage 'chapelle-admin-auth-store'", async () => {
@@ -98,6 +109,15 @@ describe("store/authStore (admin-app)", () => {
       state: { user: unknown };
     };
     expect(persisted.state.user).toBeNull();
+  });
+
+  it("clear() vide le cache TanStack Query (évite les données non anonymisées après déconnexion)", async () => {
+    const { useAuthStore } = await import("./authStore");
+    useAuthStore.getState().setUser(user);
+
+    useAuthStore.getState().clear();
+
+    expect(queryClientClearMock).toHaveBeenCalledTimes(1);
   });
 
   it("ne persiste ni mot de passe ni token : uniquement { user }", async () => {
