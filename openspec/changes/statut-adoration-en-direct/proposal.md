@@ -19,16 +19,33 @@ réponse minimale et d'une logique de rafraîchissement événementielle (se re-
 la fin du créneau en cours) plutôt que d'un polling à intervalle fixe sur un endpoint pensé pour la
 pagination d'un calendrier.
 
-## Schéma d'API proposé (à communiquer au backend)
+## Schéma d'API réel (implémenté côté backend — diverge du schéma initialement proposé)
 
 ```
 GET /api/v1/adoration/en-cours
 ```
 - Public, sans authentification (même politique que `GET /api/v1/planning`).
-- Aucun paramètre : le serveur calcule l'instant courant lui-même (comme `GET /api/v1/planning` sans
-  `date` calcule "aujourd'hui" en Europe/Paris).
-- Logique serveur : existe-t-il une réservation `status = EFFECTUEE`, `estArchivee = false`, telle
-  que `dateDebut <= maintenant <= dateFin` ?
+- Paramètre optionnel `date` (ISO-8601 avec offset) : si absent, le serveur calcule l'instant courant
+  lui-même. Logique serveur : existe-t-il une réservation `status = EFFECTUEE`, non supprimée, telle
+  que `[dateDebut, dateFin)` contient l'instant interrogé ?
+- **Contrairement au schéma initialement envisagé ci-dessous, le backend ne renvoie PAS un objet
+  `{enCours, creneauActuel}`** : il renvoie directement l'entrée (`PlanningEntryResponse`, mêmes
+  champs que `GET /planning` : `id`, `idUtilisateur`, `nomUtilisateur`, `prenomsUtilisateur`,
+  `roleUtilisateur`, `dateDebut`, `dateFin`, `description`, `estArchivee`, `estAnonymise`) en `200`, ou
+  une `404` (`ErrorResponse` standard) si aucune adoration n'est en cours. L'anonymisation suit la
+  même politique que `/planning` (anonymisé pour un appelant anonyme/ADORATEUR, identité en clair pour
+  ADMINISTRATEUR/SUPERADMINISTRATEUR ou le titulaire).
+- **Bug corrigé le 2026-10-12** : le frontend avait été implémenté en supposant le schéma
+  `{enCours, creneauActuel}` ci-dessous (jamais vérifié empiriquement contre le backend réel avant
+  mise en production), ce qui faisait toujours échouer le parsing (`data.enCours` toujours
+  `undefined`) même avec un créneau réellement actif — l'UI affichait alors en permanence "Aucun
+  veilleur n'est présent à l'instant". Fix : `getStatutAdorationDirect()`
+  (`apps/user-app/src/api/endpoints/adoration.ts`) normalise désormais la vraie réponse backend
+  (`PlanningEntryResponse` en 200, `404` en absence) vers la forme interne `StatutAdorationDirectResponse`
+  ci-dessous, qui reste un type frontend dérivé (pas un miroir du contrat backend) consommé sans
+  changement par `useStatutAdorationDirect`/`AdorationLive`.
+
+### Schéma initialement envisagé (jamais implémenté tel quel côté backend, conservé ici pour mémoire)
 
 Réponse `200` :
 ```json
