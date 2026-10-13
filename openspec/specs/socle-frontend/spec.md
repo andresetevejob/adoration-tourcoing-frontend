@@ -1,9 +1,10 @@
-# Spec — socle-frontend (composant Input, FormAlert & pipeline Tailwind)
+# Spec — socle-frontend (composant Input, FormAlert, Navigation & pipeline Tailwind)
 
 > Périmètre gradué : le composant partagé `Input` (packages/shared/src/ui/Input.tsx), le composant
-> partagé `FormAlert` (packages/shared/src/ui/FormAlert.tsx) et la configuration Tailwind nécessaire
-> à leur bon fonctionnement. Le reste de la capacité socle-frontend (client API, tooling, autres
-> composants du kit UI) n'est pas encore documenté ici.
+> partagé `FormAlert` (packages/shared/src/ui/FormAlert.tsx), la navigation mobile de `user-app`
+> (`Navbar`/`MobileDrawer`) et la configuration Tailwind nécessaire à leur bon fonctionnement. Le
+> reste de la capacité socle-frontend (client API, tooling, autres composants du kit UI) n'est pas
+> encore documenté ici.
 
 ## Pipeline CSS : scan de packages/shared
 
@@ -72,3 +73,33 @@ disparaître un message important avant que l'utilisateur l'ait vu.
 WHY : le `Toast` global (bas à droite, auto-dismiss 4s) peut passer inaperçu sur un écran de
 formulaire long ou sur mobile — constaté sur l'erreur 409 (email/téléphone déjà utilisé) lors d'une
 création de compte.
+
+## Navigation (`apps/user-app/src/components/layout/Navbar.tsx`)
+
+Seuil responsive : **768px** (`md` Tailwind), seul seuil "mobile" utilisé dans le projet (partagé
+avec l'adaptation de l'Agenda, cf. `openspec/specs/consultation-planning/spec.md`).
+
+### Barre desktop (≥768px)
+Logo + 5 liens (`SITE_LINKS` : Accueil, Agenda, Actualités, Qui sommes-nous ?, Contact) + `AuthNav`,
+tous visibles en permanence sur une seule ligne (`flex flex-wrap`).
+
+### Drawer mobile (<768px)
+WHEN la largeur d'écran est inférieure à 768px THEN `SITE_LINKS` et `AuthNav` disparaissent de la
+barre visible, remplacés par un bouton hamburger (icône SVG inline, cible tactile ≥44px,
+`aria-expanded`/`aria-controls`/`aria-label` dynamique "Ouvrir le menu"/"Fermer le menu").
+
+WHEN le bouton hamburger est activé THEN un panneau (`MobileDrawer.tsx`, `role="dialog"`,
+`aria-modal="true"`) glisse depuis le bord droit de l'écran (animation `transition-transform`
+300ms, montage conditionnel — pas de DOM dupliqué quand fermé), recouvrant le contenu sous un
+overlay (`bg-night-950/60`, même teinte que `Modal`) ; le panneau contient `SITE_LINKS` + `AuthNav`,
+empilés verticalement.
+
+Fermeture du drawer : clic sur l'overlay, touche `Échap`, ou clic sur un lien **ou bouton** du
+drawer (ex. liens `SITE_LINKS`/"Mon compte", ou bouton "Déconnexion" d'`AuthNav` — les deux éléments
+déclenchent la fermeture, pas seulement les liens, pour éviter un overlay bloquant après une
+déconnexion réussie). Focus restauré sur le bouton hamburger à la fermeture ; pas de trap de focus
+complet (Tab peut sortir du panneau).
+
+WHY : sans bascule, les liens se compressaient de façon désordonnée sous 768px (`flex-wrap` sans
+menu replié) — pattern standard "hamburger + drawer" pour la navigation mobile, cohérent avec
+l'esthétique déjà en place (`Modal`, pas de nouvelle dépendance d'animation/icônes).

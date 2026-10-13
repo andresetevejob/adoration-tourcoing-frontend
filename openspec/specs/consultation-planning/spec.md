@@ -52,10 +52,12 @@ type PlanningPeriode =
 - Source de données : `GET /planning/intervalle?dateDebut=&dateFin=` — pas d'endpoint dédié, une
   semaine (7 jours) est traitée comme un cas particulier d'intervalle (`dateFin` calculé comme
   `dateDebut + 6 jours`), toujours largement sous le plafond `MAX_INTERVALLE_JOURS` (31).
-- Vue FullCalendar : `timeGridWeek` (vue **native** FullCalendar, incluse dans `timeGridPlugin`
-  déjà importé pour le mode Jour) — pas de mécanisme de durée dynamique custom comme pour
-  "Intervalle". Locale française (`frLocale`) : semaine Lundi–Dimanche par défaut, cohérent avec
-  `dateDebut` toujours calculé comme un lundi.
+- Vue FullCalendar (`user-app`, **≥768px**) : `timeGridWeek` (vue **native** FullCalendar, incluse
+  dans `timeGridPlugin` déjà importé pour le mode Jour) — pas de mécanisme de durée dynamique
+  custom comme pour "Intervalle". Locale française (`frLocale`) : semaine Lundi–Dimanche par
+  défaut, cohérent avec `dateDebut` toujours calculé comme un lundi.
+- Adaptation mobile (`user-app` uniquement, **<768px**, cf. "Adaptation mobile de l'Agenda"
+  ci-dessous) : bascule vers `listWeek` (liste chronologique) au lieu de `timeGridWeek`.
 - Affichage des créneaux : heure affichée = `arg.timeText` (début seul), comme en vue "Jour" — voir
   "Affichage des créneaux" ci-dessous.
 - Hors périmètre : le surlignage "tous les créneaux réservés" (gold) n'est pas étendu à cette vue,
@@ -68,7 +70,10 @@ type PlanningPeriode =
   React (`portalId="datepicker-portal"`, attaché à `document.body`) — nécessaire pour que le popup
   se peigne au-dessus de la grille FullCalendar plutôt que derrière (voir "Limitations connues").
 - Source de données : `GET /planning/mensuel?annee=&mois=`.
-- Vue FullCalendar : `dayGridMonth`.
+- Vue FullCalendar : `dayGridMonth` — inchangé quel que soit le viewport.
+- Adaptation mobile (`user-app` uniquement, **<768px**, cf. "Adaptation mobile de l'Agenda"
+  ci-dessous) : la grille reste affichée telle quelle (pas de changement de vue), mais devient
+  tactile — taper un jour affiche la liste des créneaux de ce jour sous la grille.
 
 ### Mode Intervalle (temporairement retiré du sélecteur "Vue")
 
@@ -90,6 +95,41 @@ type PlanningPeriode =
   via `diffJoursInclusif`), recréée par remount complet (`key={periodeCacheKey(periode)}` sur le
   composant Calendrier) à chaque changement de période — FullCalendar traite `initialView`/
   `initialDate`/`views` comme des props "initial-only", ignorées après le montage.
+
+## Adaptation mobile de l'Agenda (`user-app` uniquement)
+
+`admin-app` (`/planning`) n'est pas concerné par cette section : comportement inchangé quel que
+soit le viewport.
+
+Seuil responsive : **768px**, cohérent avec le drawer de navigation (`openspec/specs/
+socle-frontend/spec.md`, section "Navigation"). Détection via un hook réactif
+`useIsMobileViewport()` (`apps/user-app/src/hooks/useIsMobileViewport.ts`,
+`window.matchMedia("(max-width: 767px)")`, écoute les changements — rotation d'écran,
+redimensionnement) qui pilote le rendu de `CalendrierReservations`, en complément (pas en
+remplacement) du mode choisi via `FiltreDatePlanning`.
+
+### Mode Semaine, mobile
+WHEN la largeur d'écran est inférieure à 768px THEN la vue FullCalendar bascule de `timeGridWeek`
+vers `listWeek` (plugin `@fullcalendar/list`) — liste chronologique des créneaux groupés par jour.
+La colonne heure native du plugin (`.fc-list-event-time`) affiche déjà l'heure de début :
+`renderPlanningEvent` ne rend aucune heure pour cette vue (ni `arg.timeText`, ni la plage calculée),
+pour éviter un doublon visuel — seuls le titre et le badge « Ma réservation » éventuel sont rendus.
+
+### Mode Mois, mobile
+WHEN la largeur d'écran est inférieure à 768px THEN taper un jour (`dateClick`) affiche la liste des
+créneaux de ce jour sous la grille (`ListeCreneauxJour.tsx`, lecture seule pour cette itération —
+aucune action tactile sur ses lignes), calculée côté client depuis les `entries` déjà chargées
+(`filterEntriesByDay`, `planningEntries.ts` — aucun nouvel appel réseau). Taper à nouveau le même
+jour referme le panneau. Le *drag-select* (`selectable`, création de réservation en glissant sur la
+grille) est désactivé pour cette seule combinaison (Mode Mois + mobile), pour éviter un conflit
+d'interprétation entre `select` et `dateClick` sur un simple tap — la création de réservation reste
+pleinement disponible via Mode Jour/Semaine, et le drag-select reste inchangé en Mode Mois desktop.
+L'annulation d'une réservation reste accessible uniquement via la puce d'événement dans la grille
+(`eventClick`, inchangé), pas depuis le panneau du jour.
+
+WHY : les vues "Semaine" (7 colonnes) et "Mois" (grille 7×5/6) deviennent illisibles sous 768px sans
+adaptation — choix de rapprocher visuellement l'expérience de l'app Google Agenda plutôt que de
+forcer une grille compressée ou de limiter les modes disponibles sur mobile.
 
 ## Récupération des données (`api/endpoints/planning.ts`, `usePlanning`)
 
@@ -139,6 +179,11 @@ seulement le début (`arg.timeText` fourni par défaut par FullCalendar).
 WHEN le mode est "Jour" (`timeGridDay`) ou "Semaine" (`timeGridWeek`) THEN l'heure affichée reste
 `arg.timeText` (début seul) : ces grilles horaires rendent déjà visuellement la durée du créneau
 (hauteur du bloc), afficher la plage en texte serait redondant.
+
+WHEN la vue est `listWeek` (Mode Semaine, mobile, `user-app` uniquement, cf. "Adaptation mobile de
+l'Agenda") THEN **aucune heure n'est rendue** par `renderPlanningEvent` (ni `arg.timeText`, ni la
+plage calculée) : la colonne `.fc-list-event-time`, native au rendu du plugin `@fullcalendar/list`,
+affiche déjà l'heure de début — ne rien afficher ici évite la duplication visuelle.
 
 WHY : un créneau d'adoration reste toujours sur un seul jour calendaire (garanti côté backend), donc
 aucune variante de format `dd/MM` n'est nécessaire pour distinguer un éventuel chevauchement de
