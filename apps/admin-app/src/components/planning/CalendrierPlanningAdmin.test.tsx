@@ -99,6 +99,18 @@ describe("CalendrierPlanningAdmin (admin-app)", () => {
       expect(container.querySelector(".fc-view")).toHaveClass("fc-timeGridDay-view");
     });
 
+    it("mode semaine : vue timeGridWeek", () => {
+      const { container } = render(
+        <CalendrierPlanningAdmin
+          periode={{ mode: "semaine", dateDebut: "2026-01-05" }}
+          entries={[]}
+          isLoading={false}
+        />,
+      );
+
+      expect(container.querySelector(".fc-view")).toHaveClass("fc-timeGridWeek-view");
+    });
+
     it("mode mois : vue dayGridMonth", () => {
       const { container } = render(
         <CalendrierPlanningAdmin

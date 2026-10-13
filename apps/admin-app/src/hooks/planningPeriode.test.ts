@@ -7,6 +7,10 @@ describe("hooks/planningPeriode (admin-app)", () => {
       expect(periodeCacheKey({ mode: "jour", date: "2026-01-01" })).toBe("jour:2026-01-01");
     });
 
+    it("mode semaine : préfixe « semaine: » suivi de dateDebut (toujours un lundi)", () => {
+      expect(periodeCacheKey({ mode: "semaine", dateDebut: "2026-01-05" })).toBe("semaine:2026-01-05");
+    });
+
     it("mode mois : préfixe « mois: » suivi de l'année et du mois sur 2 chiffres", () => {
       expect(periodeCacheKey({ mode: "mois", annee: 2026, mois: 3 })).toBe("mois:2026-03");
     });

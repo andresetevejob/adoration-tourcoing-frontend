@@ -3,7 +3,7 @@ import ReactDatePicker, { registerLocale } from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { fr } from "date-fns/locale/fr";
 import { Button, Input, Select } from "@chapelle/shared/ui";
-import { diffJoursInclusif, MAX_INTERVALLE_JOURS, toISODateString } from "@chapelle/shared/utils";
+import { diffJoursInclusif, lundiDeLaSemaine, MAX_INTERVALLE_JOURS, toISODateString } from "@chapelle/shared/utils";
 import type { PlanningPeriode } from "../../hooks/planningPeriode";
 
 registerLocale("fr", fr);
@@ -18,6 +18,7 @@ export interface FiltreDatePlanningProps {
  *  intact, seule l'option disparaît du `Select` "Vue". */
 const MODE_OPTIONS = [
   { value: "jour", label: "Jour" },
+  { value: "semaine", label: "Semaine" },
   { value: "mois", label: "Mois" },
 ];
 
@@ -70,6 +71,8 @@ export function FiltreDatePlanning({ value, onChange }: FiltreDatePlanningProps)
   function handleModeChange(mode: string): void {
     if (mode === "jour") {
       onChange({ mode: "jour", date: toISODateString(new Date()) });
+    } else if (mode === "semaine") {
+      onChange({ mode: "semaine", dateDebut: lundiDeLaSemaine(toISODateString(new Date())) });
     } else if (mode === "mois") {
       onChange({ mode: "mois", ...moisActuel() });
     } else {
@@ -107,6 +110,32 @@ export function FiltreDatePlanning({ value, onChange }: FiltreDatePlanningProps)
             }}
           >
             Aujourd'hui
+          </Button>
+        </>
+      )}
+      {value.mode === "semaine" && (
+        <>
+          <Input
+            type="date"
+            label="Semaine"
+            value={value.dateDebut}
+            onChange={(event) => {
+              // Un <input type="date"> natif peut émettre value: "" quand l'utilisateur vide le
+              // champ (suppression des segments jour/mois/année) ; lundiDeLaSemaine ne supporte
+              // pas cette chaîne vide (RangeError: Invalid time value). On ignore l'événement et
+              // on garde la valeur affichée actuelle jusqu'à une date complète valide.
+              if (!event.target.value) return;
+              onChange({ mode: "semaine", dateDebut: lundiDeLaSemaine(event.target.value) });
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              onChange({ mode: "semaine", dateDebut: lundiDeLaSemaine(toISODateString(new Date())) });
+            }}
+          >
+            Cette semaine
           </Button>
         </>
       )}

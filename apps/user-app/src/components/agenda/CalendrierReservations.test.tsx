@@ -105,6 +105,18 @@ describe("CalendrierReservations (user-app)", () => {
       expect(container.querySelector(".fc-view")).toHaveClass("fc-timeGridDay-view");
     });
 
+    it("mode semaine : vue timeGridWeek", () => {
+      const { container } = render(
+        <CalendrierReservations
+          periode={{ mode: "semaine", dateDebut: "2026-01-05" }}
+          entries={[]}
+          isLoading={false}
+        />,
+      );
+
+      expect(container.querySelector(".fc-view")).toHaveClass("fc-timeGridWeek-view");
+    });
+
     it("mode mois : vue dayGridMonth", () => {
       const { container } = render(
         <CalendrierReservations

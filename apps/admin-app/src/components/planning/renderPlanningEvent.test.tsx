@@ -117,4 +117,25 @@ describe("renderPlanningEvent (admin-app)", () => {
     expect(screen.getByText("10:00")).toBeInTheDocument();
     expect(screen.queryByText("11:00 – 12:00")).not.toBeInTheDocument();
   });
+
+  it("conserve arg.timeText (sans recalcul) en vue Semaine (timeGridWeek), comme en vue Jour", () => {
+    render(
+      <>
+        {renderPlanningEvent(
+          buildArg({
+            title: "Jean Dupont",
+            isMine: false,
+            roleUtilisateur: UserRole.VEILLEUR,
+            viewType: "timeGridWeek",
+            start: new Date("2026-01-01T10:00:00Z"),
+            end: new Date("2026-01-01T11:00:00Z"),
+            timeText: "10:00",
+          }),
+        )}
+      </>,
+    );
+
+    expect(screen.getByText("10:00")).toBeInTheDocument();
+    expect(screen.queryByText("11:00 – 12:00")).not.toBeInTheDocument();
+  });
 });

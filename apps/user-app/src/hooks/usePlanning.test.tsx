@@ -92,6 +92,36 @@ describe("hooks/usePlanning (user-app)", () => {
     expect(getPlanningMensuel).not.toHaveBeenCalled();
   });
 
+  it("mode semaine : interroge getPlanningIntervalle avec dateDebut et dateFin = dateDebut + 6 jours", async () => {
+    vi.mocked(getPlanningIntervalle).mockResolvedValueOnce(pageOf("e4"));
+
+    const { result } = renderHook(() => usePlanning({ mode: "semaine", dateDebut: "2026-01-05" }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(getPlanningIntervalle).toHaveBeenCalledWith({ dateDebut: "2026-01-05", dateFin: "2026-01-11" });
+    expect(getPlanning).not.toHaveBeenCalled();
+    expect(getPlanningMensuel).not.toHaveBeenCalled();
+  });
+
+  it("mode semaine : la dateFin calculée à cheval sur un changement de mois reste correcte", async () => {
+    vi.mocked(getPlanningIntervalle).mockResolvedValueOnce(pageOf("e5"));
+
+    const { result } = renderHook(() => usePlanning({ mode: "semaine", dateDebut: "2026-01-26" }), {
+      wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(getPlanningIntervalle).toHaveBeenCalledWith({ dateDebut: "2026-01-26", dateFin: "2026-02-01" });
+  });
+
   it("interroge sans garde d'authentification (aucun `enabled` bloquant)", () => {
     vi.mocked(getPlanning).mockResolvedValueOnce(pageOf("e1"));
 
@@ -126,5 +156,33 @@ describe("hooks/usePlanning (user-app)", () => {
       ?.content[0].id).toBe("e-jour");
     expect(queryClient.getQueryData<PageResponse<PlanningEntryResponse>>(["planning", "mois:2026-03"])
       ?.content[0].id).toBe("e-mois");
+  });
+
+  it("la queryKey du mode semaine est distincte de celle du mode jour pour la même date de début", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    function wrapperWithClient({ children }: { children: ReactNode }) {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    vi.mocked(getPlanning).mockResolvedValueOnce(pageOf("e-jour"));
+    vi.mocked(getPlanningIntervalle).mockResolvedValueOnce(pageOf("e-semaine"));
+
+    const jourHook = renderHook(() => usePlanning({ mode: "jour", date: "2026-01-05" }), {
+      wrapper: wrapperWithClient,
+    });
+    await waitFor(() => {
+      expect(jourHook.result.current.isSuccess).toBe(true);
+    });
+
+    const semaineHook = renderHook(() => usePlanning({ mode: "semaine", dateDebut: "2026-01-05" }), {
+      wrapper: wrapperWithClient,
+    });
+    await waitFor(() => {
+      expect(semaineHook.result.current.isSuccess).toBe(true);
+    });
+
+    expect(queryClient.getQueryData<PageResponse<PlanningEntryResponse>>(["planning", "jour:2026-01-05"])
+      ?.content[0].id).toBe("e-jour");
+    expect(queryClient.getQueryData<PageResponse<PlanningEntryResponse>>(["planning", "semaine:2026-01-05"])
+      ?.content[0].id).toBe("e-semaine");
   });
 });

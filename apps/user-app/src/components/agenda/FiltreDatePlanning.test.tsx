@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { lundiDeLaSemaine, toISODateString } from "@chapelle/shared/utils";
 import type { PlanningPeriode } from "../../hooks/planningPeriode";
 import { FiltreDatePlanning, validateIntervalle } from "./FiltreDatePlanning";
 
@@ -55,6 +56,63 @@ describe("FiltreDatePlanning (user-app)", () => {
         mode: "jour",
         date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as string,
       });
+    });
+  });
+
+  describe("mode semaine", () => {
+    it("affiche la date de début (lundi) fournie", () => {
+      render(<FiltreDatePlanning value={{ mode: "semaine", dateDebut: "2026-01-05" }} onChange={vi.fn()} />);
+
+      expect(screen.getByLabelText("Vue")).toHaveValue("semaine");
+      expect(screen.getByLabelText("Semaine")).toHaveValue("2026-01-05");
+    });
+
+    it("normalise au lundi quand la nouvelle date saisie est le lundi lui-même", () => {
+      const onChange = vi.fn();
+      render(
+        <FiltreDatePlanning value={{ mode: "semaine", dateDebut: "2026-01-05" }} onChange={onChange} />,
+      );
+
+      fireEvent.change(screen.getByLabelText("Semaine"), { target: { value: "2026-02-02" } });
+
+      expect(onChange).toHaveBeenCalledWith({ mode: "semaine", dateDebut: "2026-02-02" });
+    });
+
+    it("normalise au lundi de la semaine quand une autre date de la semaine (ex. dimanche) est saisie", () => {
+      const onChange = vi.fn();
+      render(
+        <FiltreDatePlanning value={{ mode: "semaine", dateDebut: "2026-01-05" }} onChange={onChange} />,
+      );
+
+      // 2026-02-08 est un dimanche, de la même semaine que le lundi 2026-02-02.
+      fireEvent.change(screen.getByLabelText("Semaine"), { target: { value: "2026-02-08" } });
+
+      expect(onChange).toHaveBeenCalledWith({ mode: "semaine", dateDebut: "2026-02-02" });
+    });
+
+    it("appelle onChange avec le lundi de la semaine courante au clic sur « Cette semaine »", () => {
+      const onChange = vi.fn();
+      render(
+        <FiltreDatePlanning value={{ mode: "semaine", dateDebut: "2026-01-05" }} onChange={onChange} />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Cette semaine" }));
+
+      const lundiAttendu = lundiDeLaSemaine(toISODateString(new Date()));
+      expect(onChange).toHaveBeenCalledWith({ mode: "semaine", dateDebut: lundiAttendu });
+    });
+
+    it("n'appelle pas onChange quand le champ est vidé (non-régression : RangeError Invalid time value)", () => {
+      const onChange = vi.fn();
+      render(
+        <FiltreDatePlanning value={{ mode: "semaine", dateDebut: "2026-01-05" }} onChange={onChange} />,
+      );
+
+      expect(() => {
+        fireEvent.change(screen.getByLabelText("Semaine"), { target: { value: "" } });
+      }).not.toThrow();
+
+      expect(onChange).not.toHaveBeenCalled();
     });
   });
 
@@ -175,6 +233,16 @@ describe("FiltreDatePlanning (user-app)", () => {
         annee: expect.any(Number) as number,
         mois: expect.any(Number) as number,
       });
+    });
+
+    it("passer de jour à semaine calcule le lundi de la semaine courante", () => {
+      const onChange = vi.fn();
+      render(<FiltreDatePlanning value={{ mode: "jour", date: "2026-01-01" }} onChange={onChange} />);
+
+      fireEvent.change(screen.getByLabelText("Vue"), { target: { value: "semaine" } });
+
+      const lundiAttendu = lundiDeLaSemaine(toISODateString(new Date()));
+      expect(onChange).toHaveBeenCalledWith({ mode: "semaine", dateDebut: lundiAttendu });
     });
 
     // Option "Intervalle" temporairement retirée du Select "Vue" (réactivation prévue plus

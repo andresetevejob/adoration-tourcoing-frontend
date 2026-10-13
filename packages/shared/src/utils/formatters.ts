@@ -62,6 +62,18 @@ export function diffJoursInclusif(dateDebut: string, dateFin: string): number {
   return Math.round((fin.getTime() - debut.getTime()) / MS_PAR_JOUR) + 1;
 }
 
+/** Lundi (`yyyy-MM-dd`) de la semaine ISO (lundi–dimanche) contenant `dateISO`, calcul en UTC
+ *  (même pattern que `diffJoursInclusif`) pour ne pas dépendre du fuseau d'exécution — utilisé
+ *  pour normaliser `PlanningPeriode` en mode "semaine" (seul le lundi est stocké, `dateFin` est
+ *  toujours dérivé au point d'usage). */
+export function lundiDeLaSemaine(dateISO: string): string {
+  const date = new Date(`${dateISO}T00:00:00Z`);
+  const jourSemaine = date.getUTCDay(); // 0 = dimanche, 1 = lundi, ..., 6 = samedi
+  const decalage = jourSemaine === 0 ? 6 : jourSemaine - 1;
+  date.setUTCDate(date.getUTCDate() - decalage);
+  return date.toISOString().slice(0, 10);
+}
+
 /** `true` si la durée entre `dateDebut` et `dateFin` excède strictement `maxHeures`
  *  (borne incluse : une durée de exactement `maxHeures` retourne `false`) — utilisé pour
  *  rejeter les créneaux d'adoration de plus de 24h (sélection calendrier + filet de

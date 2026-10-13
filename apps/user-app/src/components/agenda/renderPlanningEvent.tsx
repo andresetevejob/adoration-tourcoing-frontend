@@ -12,13 +12,15 @@ import { formatTime } from "@chapelle/shared/utils";
  * En vue "Mois"/"Intervalle", affiche la plage `HH:mm – HH:mm` (début ET fin), construite
  * depuis `arg.event.start`/`arg.event.end` plutôt que le seul `arg.timeText` (début) fourni
  * par FullCalendar — un créneau reste toujours sur un seul jour calendaire (garanti côté
- * backend), donc pas de variante `dd/MM` à gérer. En vue "Jour" (`timeGridDay`), la grille
- * horaire rend déjà visuellement la durée : on garde `arg.timeText` pour éviter la redondance.
+ * backend), donc pas de variante `dd/MM` à gérer. En vues "Jour" (`timeGridDay`) et "Semaine"
+ * (`timeGridWeek`), grilles horaires où la hauteur du bloc rend déjà visuellement la durée :
+ * on garde `arg.timeText` (début seul) pour éviter la redondance.
  */
 export function renderPlanningEvent(arg: EventContentArg): ReactNode {
   const isMine = Boolean(arg.event.extendedProps.isMine);
+  const estGrilleHoraire = arg.view.type === "timeGridDay" || arg.view.type === "timeGridWeek";
   const timeText =
-    arg.view.type !== "timeGridDay" && arg.event.start && arg.event.end
+    !estGrilleHoraire && arg.event.start && arg.event.end
       ? `${formatTime(arg.event.start)} – ${formatTime(arg.event.end)}`
       : arg.timeText;
 

@@ -26,6 +26,10 @@ function resolveCalendarConfig(periode: PlanningPeriode) {
   switch (periode.mode) {
     case "jour":
       return { initialView: "timeGridDay", initialDate: periode.date, views: undefined };
+    case "semaine":
+      // Vue native FullCalendar (déjà incluse dans `timeGridPlugin`) : pas de durée dynamique
+      // custom comme pour "intervalle", `dateDebut` est toujours un lundi (cf. `PlanningPeriode`).
+      return { initialView: "timeGridWeek", initialDate: periode.dateDebut, views: undefined };
     case "mois":
       return {
         initialView: "dayGridMonth",

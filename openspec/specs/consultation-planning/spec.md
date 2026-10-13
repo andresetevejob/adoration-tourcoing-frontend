@@ -28,6 +28,7 @@ Type central (`hooks/planningPeriode.ts`, dupliqué dans les deux apps) :
 ```ts
 type PlanningPeriode =
   | { mode: "jour"; date: string }                    // yyyy-MM-dd
+  | { mode: "semaine"; dateDebut: string }            // yyyy-MM-dd, toujours un lundi
   | { mode: "mois"; annee: number; mois: number }     // mois 1-12
   | { mode: "intervalle"; dateDebut: string; dateFin: string }; // yyyy-MM-dd, bornes incluses
 ```
@@ -36,6 +37,30 @@ type PlanningPeriode =
 - Contrôle : `<Input type="date">` + bouton "Aujourd'hui".
 - Source de données : `GET /planning?date=` (endpoint historique, un seul jour).
 - Vue FullCalendar : `timeGridDay`.
+
+### Mode Semaine
+- Contrôle : un seul `<Input type="date">` (n'importe quel jour de la semaine visée) + bouton
+  "Cette semaine". Pas de boutons précédent/suivant — cohérent avec l'absence de navigation
+  intégrée FullCalendar sur tous les modes (`headerToolbar={false}`, une seule source de vérité
+  pour la période affichée, exposée par le filtre externe).
+- Normalisation : seul le **lundi** de la semaine est stocké dans `PlanningPeriode` (`dateDebut`) ;
+  `dateFin` (dimanche) n'est jamais stocké, toujours dérivé au point d'usage. Choisir n'importe
+  quel jour de la semaine dans l'`<Input>`, ou cliquer "Cette semaine", normalise au lundi
+  correspondant via `lundiDeLaSemaine` (`packages/shared/src/utils/formatters.ts`, fonction
+  partagée entre les deux apps) — même esprit que le mode "Mois" qui normalise toujours au 1er du
+  mois affiché.
+- Source de données : `GET /planning/intervalle?dateDebut=&dateFin=` — pas d'endpoint dédié, une
+  semaine (7 jours) est traitée comme un cas particulier d'intervalle (`dateFin` calculé comme
+  `dateDebut + 6 jours`), toujours largement sous le plafond `MAX_INTERVALLE_JOURS` (31).
+- Vue FullCalendar : `timeGridWeek` (vue **native** FullCalendar, incluse dans `timeGridPlugin`
+  déjà importé pour le mode Jour) — pas de mécanisme de durée dynamique custom comme pour
+  "Intervalle". Locale française (`frLocale`) : semaine Lundi–Dimanche par défaut, cohérent avec
+  `dateDebut` toujours calculé comme un lundi.
+- Affichage des créneaux : heure affichée = `arg.timeText` (début seul), comme en vue "Jour" — voir
+  "Affichage des créneaux" ci-dessous.
+- Hors périmètre : le surlignage "tous les créneaux réservés" (gold) n'est pas étendu à cette vue,
+  scopé explicitement à la vue Mois (cf. "Affichage des créneaux"). Le surlignage "Ma réservation"
+  n'est pas scopé par vue et s'applique normalement.
 
 ### Mode Mois
 - Contrôle : sélecteur `react-datepicker` (`showMonthYearPicker`, locale française via
@@ -106,13 +131,14 @@ raison que le reste de cette spec (pas de package partagé pour ces composants).
 
 ### Plage horaire affichée
 
-WHEN le mode est "Mois" ou "Intervalle" (vue FullCalendar différente de `timeGridDay`) THEN l'heure
-affichée sur le créneau est la plage complète `HH:mm – HH:mm` (début **et** fin), calculée depuis
-`arg.event.start`/`arg.event.end` (`formatTime`, fuseau Europe/Paris) — pas seulement le début
-(`arg.timeText` fourni par défaut par FullCalendar).
+WHEN le mode est "Mois" ou "Intervalle" (vue FullCalendar différente de `timeGridDay`/`timeGridWeek`)
+THEN l'heure affichée sur le créneau est la plage complète `HH:mm – HH:mm` (début **et** fin),
+calculée depuis `arg.event.start`/`arg.event.end` (`formatTime`, fuseau Europe/Paris) — pas
+seulement le début (`arg.timeText` fourni par défaut par FullCalendar).
 
-WHEN le mode est "Jour" (`timeGridDay`) THEN l'heure affichée reste `arg.timeText` (début seul) : la
-grille horaire rend déjà visuellement la durée du créneau, afficher la plage en texte serait redondant.
+WHEN le mode est "Jour" (`timeGridDay`) ou "Semaine" (`timeGridWeek`) THEN l'heure affichée reste
+`arg.timeText` (début seul) : ces grilles horaires rendent déjà visuellement la durée du créneau
+(hauteur du bloc), afficher la plage en texte serait redondant.
 
 WHY : un créneau d'adoration reste toujours sur un seul jour calendaire (garanti côté backend), donc
 aucune variante de format `dd/MM` n'est nécessaire pour distinguer un éventuel chevauchement de
@@ -139,8 +165,8 @@ Implémentation : règle CSS scopée à la vue (`.fc-dayGridMonth-view .fc-event
 lui-même sur le conteneur de la vue active (`.fc-view.fc-dayGridMonth-view`) — aucune donnée par
 créneau n'est nécessaire, donc aucun changement dans `mapPlanningEntryToEvent`/
 `mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Jamais actif en vue "Jour"
-(`fc-timeGridDay-view`) ni "Intervalle" (vue `dayGrid` custom, classe de vue différente) : seule la
-vue Mois est concernée.
+(`fc-timeGridDay-view`), "Semaine" (`fc-timeGridWeek-view`) ni "Intervalle" (vue `dayGrid` custom,
+classe de vue différente) : seule la vue Mois est concernée.
 
 Un créneau qui est à la fois "Ma réservation" et affiché en vue Mois cumule les deux règles CSS (même
 déclarations, pas de conflit visuel) ; le badge texte « Ma réservation » reste le seul signal qui

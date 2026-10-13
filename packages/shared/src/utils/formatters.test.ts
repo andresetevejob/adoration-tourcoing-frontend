@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDateTime,
   formatTime,
+  lundiDeLaSemaine,
   toISODateString,
   toParisISOString,
 } from "./formatters";
@@ -103,6 +104,47 @@ describe("exceedsMaxDuration", () => {
   it("applique un maxHeures personnalisé", () => {
     expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-01T11:00:00Z", 1)).toBe(false);
     expect(exceedsMaxDuration("2026-01-01T10:00:00Z", "2026-01-01T11:00:01Z", 1)).toBe(true);
+  });
+});
+
+describe("lundiDeLaSemaine", () => {
+  it("retourne le même jour pour un lundi", () => {
+    // 2026-01-05 est un lundi
+    expect(lundiDeLaSemaine("2026-01-05")).toBe("2026-01-05");
+  });
+
+  it.each([
+    ["mardi", "2026-01-06"],
+    ["mercredi", "2026-01-07"],
+    ["jeudi", "2026-01-08"],
+    ["vendredi", "2026-01-09"],
+    ["samedi", "2026-01-10"],
+    ["dimanche", "2026-01-11"],
+  ])("retombe sur le lundi de la semaine en cours pour un %s (pas le lundi suivant)", (_label, dateISO) => {
+    expect(lundiDeLaSemaine(dateISO)).toBe("2026-01-05");
+  });
+
+  it("gère le dimanche sans retomber sur le lundi suivant (cas limite getUTCDay() === 0)", () => {
+    // 2026-01-11 est un dimanche ; le lundi de SA semaine est 2026-01-05, pas 2026-01-12.
+    expect(lundiDeLaSemaine("2026-01-11")).toBe("2026-01-05");
+    expect(lundiDeLaSemaine("2026-01-11")).not.toBe("2026-01-12");
+  });
+
+  it("gère un changement de mois à cheval sur la semaine", () => {
+    // Semaine du lundi 2026-01-26 au dimanche 2026-02-01
+    expect(lundiDeLaSemaine("2026-01-29")).toBe("2026-01-26");
+    expect(lundiDeLaSemaine("2026-02-01")).toBe("2026-01-26");
+  });
+
+  it("gère un changement d'année à cheval sur la semaine (29/30/31 décembre -> 1/2/3 janvier)", () => {
+    // Semaine du lundi 2025-12-29 au dimanche 2026-01-04
+    expect(lundiDeLaSemaine("2025-12-29")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2025-12-30")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2025-12-31")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2026-01-01")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2026-01-02")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2026-01-03")).toBe("2025-12-29");
+    expect(lundiDeLaSemaine("2026-01-04")).toBe("2025-12-29");
   });
 });
 
