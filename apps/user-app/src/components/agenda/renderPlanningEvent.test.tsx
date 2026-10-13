@@ -45,7 +45,7 @@ describe("renderPlanningEvent (user-app)", () => {
     expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
   });
 
-  it("affiche la plage horaire début–fin en vue Intervalle (listWeek)", () => {
+  it("n'affiche aucune heure en vue liste (listWeek, Mode Semaine + mobile) — colonne native .fc-list-event-time", () => {
     render(
       <>
         {renderPlanningEvent(
@@ -55,12 +55,15 @@ describe("renderPlanningEvent (user-app)", () => {
             viewType: "listWeek",
             start: new Date("2026-01-01T10:00:00Z"),
             end: new Date("2026-01-01T11:00:00Z"),
+            timeText: "11:00",
           }),
         )}
       </>,
     );
 
-    expect(screen.getByText("11:00 – 12:00")).toBeInTheDocument();
+    expect(screen.queryByText("11:00 – 12:00")).not.toBeInTheDocument();
+    expect(screen.queryByText("11:00")).not.toBeInTheDocument();
+    expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
   });
 
   it("conserve arg.timeText (sans recalcul) en vue Jour (timeGridDay)", () => {
@@ -120,5 +123,12 @@ describe("renderPlanningEvent (user-app)", () => {
     render(<>{renderPlanningEvent(buildArg({ title: "Créneau réservé", isMine: false }))}</>);
 
     expect(screen.queryByText("Ma réservation")).not.toBeInTheDocument();
+  });
+
+  it("affiche le badge « Ma réservation » en vue liste (listWeek) malgré l'absence d'heure", () => {
+    render(<>{renderPlanningEvent(buildArg({ title: "Jean Dupont", isMine: true, viewType: "listWeek" }))}</>);
+
+    expect(screen.getByText("Ma réservation")).toBeInTheDocument();
+    expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
   });
 });

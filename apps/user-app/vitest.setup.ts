@@ -19,6 +19,22 @@ expect.extend(matchers);
 // routeur émettrait un warning "Not implemented" bruyant sur stderr.
 window.scrollTo = vi.fn();
 
+// jsdom n'implémente pas `window.matchMedia` (cf. https://github.com/jsdom/jsdom/issues/1695) :
+// `useIsMobileViewport` (Agenda mobile) l'appelle au premier rendu — sans ce stub, toute suite qui
+// rend `CalendrierReservations`/`PageAgenda` (y compris les tests antérieurs à cette proposition, qui
+// ignorent tout de `matchMedia`) lèverait `TypeError: window.matchMedia is not a function`. Valeur
+// par défaut `matches: false` ("desktop") : préserve le comportement des tests existants (écrits
+// avant la distinction desktop/mobile) sans qu'ils aient à mocker quoi que ce soit ; les tests qui
+// veulent simuler un viewport mobile surchargent explicitement `window.matchMedia` localement.
+window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
 declare module "vitest" {
   // Fusion de déclaration TypeScript (TS2428) : le corps vide et le paramètre par défaut
   // `any` doivent reproduire exactement l'interface `Assertion` de vitest.

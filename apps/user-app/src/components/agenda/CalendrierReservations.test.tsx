@@ -1,8 +1,22 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EventClickArg } from "@fullcalendar/core";
 import { UserRole, type PlanningEntryResponse } from "@chapelle/shared/types";
 import CalendrierReservations from "./CalendrierReservations";
+
+/** Surcharge locale de `window.matchMedia` (stub par défaut `matches: false` posé dans
+ *  `vitest.setup.ts`) pour simuler un viewport mobile (<768px) dans les tests qui en ont
+ *  besoin — cf. conception §4.1. */
+function mockMobileViewport(matches: boolean): void {
+  vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }) as unknown as MediaQueryList);
+}
 
 function entry(overrides: Partial<PlanningEntryResponse> = {}): PlanningEntryResponse {
   return {
@@ -20,6 +34,15 @@ function entry(overrides: Partial<PlanningEntryResponse> = {}): PlanningEntryRes
 }
 
 describe("CalendrierReservations (user-app)", () => {
+  // Ne PAS utiliser `vi.restoreAllMocks()` ici : le stub par défaut de `window.matchMedia`
+  // posé dans `vitest.setup.ts` est lui-même un `vi.fn()` (pas une vraie fonction native) —
+  // `restoreAllMocks()` le réduirait à une implémentation vide pour tout le reste du fichier
+  // (il ne peut "restaurer" que des espions `vi.spyOn` sur une fonction native préexistante).
+  // On réapplique explicitement le viewport desktop par défaut après chaque test.
+  afterEach(() => {
+    mockMobileViewport(false);
+  });
+
   it("affiche un Spinner à la place du calendrier pendant le premier chargement", () => {
     render(<CalendrierReservations periode={{ mode: "jour", date: "2026-01-01" }} entries={[]} isLoading />);
 
@@ -153,6 +176,30 @@ describe("CalendrierReservations (user-app)", () => {
       );
 
       expect(container.querySelectorAll(".fc-col-header-cell")).toHaveLength(1);
+    });
+
+    it("mode semaine + mobile (<768px) : bascule vers la vue liste listWeek", () => {
+      mockMobileViewport(true);
+
+      const { container } = render(
+        <CalendrierReservations
+          periode={{ mode: "semaine", dateDebut: "2026-01-05" }}
+          entries={[]}
+          isLoading={false}
+        />,
+      );
+
+      expect(container.querySelector(".fc-view")).toHaveClass("fc-listWeek-view");
+    });
+
+    it("mode mois + mobile (<768px) : la grille dayGridMonth reste affichée (inchangée)", () => {
+      mockMobileViewport(true);
+
+      const { container } = render(
+        <CalendrierReservations periode={{ mode: "mois", annee: 2026, mois: 3 }} entries={[]} isLoading={false} />,
+      );
+
+      expect(container.querySelector(".fc-view")).toHaveClass("fc-dayGridMonth-view");
     });
   });
 });

@@ -1,0 +1,37 @@
+Nouvelle section à ajouter à `openspec/specs/consultation-planning/spec.md` (après "Modes de
+consultation", avant "Récupération des données"), **user-app uniquement** — `admin-app` hors
+périmètre :
+
+## Adaptation mobile de l'Agenda (`user-app` uniquement)
+
+Seuil responsive : **768px**, cohérent avec le drawer de navigation (`openspec/specs/
+socle-frontend/spec.md`). Détection via un hook réactif `useIsMobileViewport()`
+(`apps/user-app/src/hooks/useIsMobileViewport.ts`, `window.matchMedia("(max-width: 767px)")`,
+écoute les changements — rotation d'écran, redimensionnement) qui pilote le rendu de
+`CalendrierReservations`, en complément (pas en remplacement) du mode choisi via
+`FiltreDatePlanning` (Jour/Semaine/Mois).
+
+### Mode Jour
+Inchangé sur mobile (`timeGridDay`, déjà une seule colonne, déjà lisible).
+
+### Mode Semaine
+WHEN la largeur d'écran est inférieure à 768px THEN la vue FullCalendar bascule de `timeGridWeek`
+vers `listWeek` (plugin `@fullcalendar/list`, nouvelle dépendance) — liste chronologique des
+créneaux groupés par jour, le rendu natif FullCalendar le plus proche visuellement d'un "Google
+Agenda". Au-dessus de 768px : `timeGridWeek` inchangé.
+
+### Mode Mois
+WHEN la largeur d'écran est inférieure à 768px THEN la grille `dayGridMonth` reste affichée
+(compacte, surlignage gold des jours réservés inchangé) mais un tap sur un jour (`dateClick`)
+affiche la liste des créneaux de ce jour sous la grille, calculée côté client depuis les `entries`
+déjà chargées (aucun nouvel appel réseau) — combo "mini-grille + agenda du jour" façon Google
+Agenda. Au-dessus de 768px : comportement actuel inchangé (pas de panneau de jour).
+
+### Affichage des créneaux en vue liste (`listWeek`)
+La vue `listWeek` affiche nativement une colonne heure séparée (`.fc-list-event-time`) :
+`renderPlanningEvent` ne doit pas dupliquer cette heure dans son propre rendu pour ce type de vue
+(éviter l'affichage en double avec la colonne native FullCalendar).
+
+WHY : les vues "Semaine" (7 colonnes) et "Mois" (grille 7×5/6) deviennent illisibles sous 768px sans
+adaptation — choix de rapprocher visuellement l'expérience de l'app Google Agenda plutôt que de
+forcer une grille compressée ou de limiter les modes disponibles sur mobile.
