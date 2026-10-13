@@ -6,6 +6,7 @@ interface FakeResponseInit {
   body?: unknown;
   statusText?: string;
   jsonThrows?: boolean;
+  blob?: Blob;
 }
 
 function fakeResponse({
@@ -13,6 +14,7 @@ function fakeResponse({
   body,
   statusText = "",
   jsonThrows = false,
+  blob,
 }: FakeResponseInit): Response {
   return {
     ok: status >= 200 && status < 300,
@@ -22,6 +24,7 @@ function fakeResponse({
       if (jsonThrows) return Promise.reject(new Error("corps non JSON"));
       return Promise.resolve(body);
     }),
+    blob: vi.fn(() => Promise.resolve(blob)),
   } as unknown as Response;
 }
 
@@ -381,6 +384,72 @@ describe("createApiClient", () => {
 
       await vi.advanceTimersByTimeAsync(15000);
       await expectation;
+    });
+  });
+
+  describe("getBlob (ex. photo utilisateur)", () => {
+    it("retourne le Blob de la réponse 200 sans tenter de le parser en JSON", async () => {
+      const fakeBlob = new Blob(["contenu"], { type: "image/jpeg" });
+      fetchMock.mockResolvedValueOnce(fakeResponse({ status: 200, blob: fakeBlob }));
+      const client = createApiClient("http://api.test");
+
+      const result = await client.getBlob("/users/1/photo");
+
+      expect(result).toBe(fakeBlob);
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe("http://api.test/users/1/photo");
+      expect(init.method).toBe("GET");
+      expect(init.credentials).toBe("include");
+    });
+
+    it("rejoue la requête en blob après un refresh réussi sur un 401", async () => {
+      const fakeBlob = new Blob(["contenu"], { type: "image/png" });
+      fetchMock
+        .mockResolvedValueOnce(
+          fakeResponse({ status: 401, body: { error: "Unauthorized", message: "Expiré" } }),
+        )
+        .mockResolvedValueOnce(fakeResponse({ status: 200, body: {} }))
+        .mockResolvedValueOnce(fakeResponse({ status: 200, blob: fakeBlob }));
+
+      const client = createApiClient("http://api.test");
+      const result = await client.getBlob("/users/1/photo");
+
+      expect(result).toBe(fakeBlob);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      const [refreshUrl, refreshInit] = fetchMock.mock.calls[1] as [string, RequestInit];
+      expect(refreshUrl).toBe("http://api.test/auth/refresh");
+      expect(refreshInit.method).toBe("POST");
+      const [retryUrl, retryInit] = fetchMock.mock.calls[2] as [string, RequestInit];
+      expect(retryUrl).toBe("http://api.test/users/1/photo");
+      expect(retryInit.method).toBe("GET");
+    });
+
+    it("lève une ApiError (403) sans tenter d'appeler .blob() sur la réponse en échec", async () => {
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ status: 403, body: { error: "Forbidden", message: "Interdit" } }),
+      );
+      const client = createApiClient("http://api.test");
+
+      await expect(client.getBlob("/users/1/photo")).rejects.toMatchObject({
+        name: "ApiError",
+        code: "Forbidden",
+        status: 403,
+        message: "Interdit",
+      });
+    });
+
+    it("lève une ApiError (404) quand la photo est absente", async () => {
+      fetchMock.mockResolvedValueOnce(
+        fakeResponse({ status: 404, body: { error: "Not Found", message: "Absent" } }),
+      );
+      const client = createApiClient("http://api.test");
+
+      await expect(client.getBlob("/users/1/photo")).rejects.toMatchObject({
+        name: "ApiError",
+        code: "Not Found",
+        status: 404,
+        message: "Absent",
+      });
     });
   });
 });

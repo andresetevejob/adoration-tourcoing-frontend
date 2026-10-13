@@ -1,10 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserRole, StatutValidation, type SpringPage, type UserResponse } from "@chapelle/shared/types";
-import { createUser, deleteUser, getUser, listUsers, rejeterUser, updateUser, validerUser } from "./users";
+import {
+  createUser,
+  deleteUser,
+  getUser,
+  getUserPhoto,
+  listUsers,
+  rejeterUser,
+  updateUser,
+  validerUser,
+} from "./users";
 
-const { putMock, getMock, postMock, deleteMock } = vi.hoisted(() => ({
+const { putMock, getMock, getBlobMock, postMock, deleteMock } = vi.hoisted(() => ({
   putMock: vi.fn(),
   getMock: vi.fn(),
+  getBlobMock: vi.fn(),
   postMock: vi.fn(),
   deleteMock: vi.fn(),
 }));
@@ -12,6 +22,7 @@ const { putMock, getMock, postMock, deleteMock } = vi.hoisted(() => ({
 vi.mock("../client", () => ({
   apiClient: {
     get: getMock,
+    getBlob: getBlobMock,
     post: postMock,
     put: putMock,
     delete: deleteMock,
@@ -44,6 +55,7 @@ describe("api/endpoints/users (admin-app)", () => {
   beforeEach(() => {
     putMock.mockReset();
     getMock.mockReset();
+    getBlobMock.mockReset();
     postMock.mockReset();
     deleteMock.mockReset();
   });
@@ -87,6 +99,16 @@ describe("api/endpoints/users (admin-app)", () => {
 
     expect(getMock).toHaveBeenCalledWith("/users/1");
     expect(result).toBe(user);
+  });
+
+  it("getUserPhoto() effectue un getBlob sur /users/{id}/photo", async () => {
+    const fakeBlob = new Blob(["contenu"], { type: "image/jpeg" });
+    getBlobMock.mockResolvedValueOnce(fakeBlob);
+
+    const result = await getUserPhoto("1");
+
+    expect(getBlobMock).toHaveBeenCalledWith("/users/1/photo");
+    expect(result).toBe(fakeBlob);
   });
 
   it("createUser() effectue un POST /users avec skipForbiddenRedirect", async () => {

@@ -15,6 +15,7 @@ export interface ApiClientHooks {
 
 export interface ApiClient {
   get<T>(path: string, params?: Record<string, unknown>, options?: RequestOptions): Promise<T>;
+  getBlob(path: string, options?: RequestOptions): Promise<Blob>;
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   delete<T = void>(path: string, options?: RequestOptions): Promise<T>;
@@ -82,6 +83,9 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
     options?: RequestOptions,
     isRetry = false,
     isInternalRefresh = false,
+    // "blob" pour `getBlob` (ex. photo utilisateur) : réutilise exactement le même pipeline
+    // (credentials, timeout, 401→refresh→retry, 403, erreurs) que les appelants JSON.
+    responseType: "json" | "blob" = "json",
   ): Promise<T> {
     const controller = options?.signal ? undefined : new AbortController();
     const timeoutId = controller
@@ -116,7 +120,7 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
           const { code, message } = await parseErrorBody(response);
           throw new ApiError(code, response.status, message);
         }
-        return await request<T>(method, path, body, options, true);
+        return await request<T>(method, path, body, options, true, false, responseType);
       }
 
       if (response.status === 401 && !options?.skipAuthRetry && !isInternalRefresh) {
@@ -133,12 +137,18 @@ export function createApiClient(baseURL: string, hooks?: ApiClientHooks): ApiCli
     if (response.status === 204) {
       return undefined as T;
     }
+    if (responseType === "blob") {
+      return (await response.blob()) as unknown as T;
+    }
     return (await response.json()) as T;
   }
 
   return {
     get<T>(path: string, params?: Record<string, unknown>, options?: RequestOptions) {
       return request<T>("GET", `${path}${buildQueryString(params)}`, undefined, options);
+    },
+    getBlob(path: string, options?: RequestOptions) {
+      return request<Blob>("GET", path, undefined, options, false, false, "blob");
     },
     post<T>(path: string, body?: unknown, options?: RequestOptions) {
       return request<T>("POST", path, body, options);

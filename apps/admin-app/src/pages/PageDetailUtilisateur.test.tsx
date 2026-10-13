@@ -1,15 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { StatutValidation, UserRole, type UpdateUserRequest, type UserResponse } from "@chapelle/shared/types";
 import PageDetailUtilisateur from "./PageDetailUtilisateur";
 import { useUser } from "../hooks/useUser";
 import { useUpdateUser } from "../hooks/useUpdateUser";
 import { useDeleteUser } from "../hooks/useDeleteUser";
+import { useUserPhoto } from "../hooks/useUserPhoto";
 
 vi.mock("../hooks/useUser");
 vi.mock("../hooks/useUpdateUser");
 vi.mock("../hooks/useDeleteUser");
+vi.mock("../hooks/useUserPhoto");
 
 interface ValidationActionsStubProps {
   user: UserResponse;
@@ -78,6 +80,14 @@ function mockDeleteUser(mutate = vi.fn(), isPending = false) {
   return mutate;
 }
 
+function mockUserPhoto() {
+  vi.mocked(useUserPhoto).mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useUserPhoto>);
+}
+
 function renderAt(id = "u1") {
   return render(
     <MemoryRouter initialEntries={[`/utilisateurs/${id}`]}>
@@ -90,6 +100,10 @@ function renderAt(id = "u1") {
 }
 
 describe("pages/PageDetailUtilisateur (admin-app)", () => {
+  beforeEach(() => {
+    mockUserPhoto();
+  });
+
   it("affiche le spinner de chargement", () => {
     mockUser({ isLoading: true, data: undefined });
     mockUpdateUser();

@@ -1,6 +1,7 @@
 import { UserRole, type UserResponse } from "@chapelle/shared/types";
-import { Card } from "@chapelle/shared/ui";
+import { Card, Spinner } from "@chapelle/shared/ui";
 import { formatDate } from "@chapelle/shared/utils";
+import { useUserPhoto } from "../../hooks/useUserPhoto";
 import { StatutValidationBadge } from "./StatutValidationBadge";
 
 export interface UserProfileProps {
@@ -20,8 +21,25 @@ const ROLE_LABEL: Record<UserRole, string> = {
  * conception U4 §6.6.
  */
 export function UserProfile({ user }: UserProfileProps) {
+  const hasPhoto = Boolean(user.photo);
+  const { data: photoUrl, isLoading: isPhotoLoading } = useUserPhoto(user.id, hasPhoto);
+
   return (
     <Card title="Informations">
+      {hasPhoto && isPhotoLoading && (
+        <div className="mb-4 flex justify-center">
+          <Spinner size="md" />
+        </div>
+      )}
+      {photoUrl && (
+        <div className="mb-4 flex justify-center">
+          <img
+            src={photoUrl}
+            alt={`Photo de ${user.prenoms} ${user.nom}`}
+            className="h-24 w-24 rounded-full object-cover"
+          />
+        </div>
+      )}
       <dl className="grid gap-4 text-sm text-night-800 sm:grid-cols-2">
         <div>
           <dt className="font-medium text-night-600">Nom</dt>

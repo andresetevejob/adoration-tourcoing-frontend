@@ -46,6 +46,12 @@ export function getUser(id: string): Promise<UserResponse> {
   return apiClient.get<UserResponse>(`/users/${id}`);
 }
 
+/** GET /users/{id}/photo — contenu binaire (image/jpeg|png), à n'appeler que si
+ * `user.photo` n'est pas `null` (cf. `useUserPhoto`). */
+export function getUserPhoto(id: string): Promise<Blob> {
+  return apiClient.getBlob(`/users/${id}/photo`);
+}
+
 /** POST /users — création par un Administrateur/SuperAdministrateur, statut initial
  * `VALIDE` automatiquement quel que soit le rôle (cf. conception U4 §2). */
 export function createUser(dto: CreateUserRequest, photo?: File): Promise<UserResponse> {
