@@ -175,6 +175,21 @@ export default function PageContact() {
                   </div>
                 </div>
               ))}
+              <div className="bg-white rounded-2xl p-6 border border-pearl">
+                <h3 className="font-serif text-base font-semibold text-night-900 mb-4">Réseaux sociaux</h3>
+                <div className="flex gap-3">
+                  {SOCIALS.map((social) => (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      aria-label={social.label}
+                      className="w-10 h-10 rounded-full bg-pearl hover:bg-gold-500/10 flex items-center justify-center text-night-500 hover:text-gold-600 transition-all duration-300 hover:scale-110"
+                    >
+                      {social.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="lg:col-span-2">
