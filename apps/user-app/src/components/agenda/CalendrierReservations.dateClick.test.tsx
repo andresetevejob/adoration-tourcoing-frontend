@@ -120,7 +120,7 @@ describe("CalendrierReservations - dateClick / Mode Mois mobile (user-app)", () 
     });
 
     expect(screen.queryByText("Aucun créneau ce jour-là.")).not.toBeInTheDocument();
-    expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
+    expect(screen.getByText("Créneau réservé")).toBeInTheDocument();
   });
 
   it("tap sur un jour sans créneau affiche le message 'Aucun créneau ce jour-là.'", () => {
@@ -143,7 +143,7 @@ describe("CalendrierReservations - dateClick / Mode Mois mobile (user-app)", () 
     });
 
     expect(screen.getByText("Aucun créneau ce jour-là.")).toBeInTheDocument();
-    expect(screen.queryByText("Jean Dupont")).not.toBeInTheDocument();
+    expect(screen.queryByText("Créneau réservé")).not.toBeInTheDocument();
   });
 
   it("tap deux fois sur le même jour referme le panneau (aucun panneau affiché)", () => {

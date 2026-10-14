@@ -23,20 +23,20 @@ function entry(overrides: Partial<PlanningEntryResponse> = {}): PlanningEntryRes
 }
 
 describe("mapPlanningEntryToEvent (user-app)", () => {
-  it("affiche l'identité complète et isMine=true quand estAnonymise=false", () => {
+  it("ne révèle jamais l'identité sur le titre, et pose isMine=true quand estAnonymise=false", () => {
     const event = mapPlanningEntryToEvent(entry({ estAnonymise: false }));
 
     expect(event).toEqual({
       id: "e1",
       start: "2026-01-01T10:00:00Z",
       end: "2026-01-01T11:00:00Z",
-      title: "Jean Dupont",
+      title: "Créneau réservé",
       classNames: ["planning-event--mine"],
       extendedProps: { roleUtilisateur: UserRole.VEILLEUR, isMine: true },
     });
   });
 
-  it("anonymise le titre et isMine=false quand estAnonymise=true", () => {
+  it("pose isMine=false quand estAnonymise=true (titre déjà générique dans les deux cas)", () => {
     const event = mapPlanningEntryToEvent(entry({ estAnonymise: true }));
 
     expect(event.title).toBe("Créneau réservé");

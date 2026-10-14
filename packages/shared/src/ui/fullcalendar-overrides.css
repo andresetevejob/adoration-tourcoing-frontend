@@ -1,57 +1,47 @@
-/* Surlignage de "Ma réservation" sur le calendrier FullCalendar (`/agenda`, user-app
-   uniquement — `planning-event--mine` n'est jamais posée côté admin-app, `isMine` y est
-   figé à `false` par conception). La classe custom est posée via `classNames` dans
-   `mapPlanningEntryToEvent` (voir `components/agenda/planningEntries.ts`) ; FullCalendar
-   la combine avec sa propre classe `.fc-event` sur le même élément — on cible les deux
-   pour la spécificité et pour ne pas déteindre sur d'autres usages de `.fc-event`.
-   Palette `gold` du thème partagé (voir theme.css), même esprit que `Badge
-   variant="warning"` (`bg-gold-100`), mais distincte du badge "Ma réservation" existant
-   (`Badge variant="info"`, teinte `night`) pour ne pas se confondre avec un badge
-   purement informatif — le texte du badge reste conservé en complément (WCAG 1.4.1, la
-   couleur seule ne suffit pas comme signal). */
-/* `border` (pas seulement `border-color`) est nécessaire : en vue "Mois"/"Intervalle"
-   (`dayGrid`), un évènement chronométré (non `allDay`) est rendu par défaut en style
-   "point" (`.fc-daygrid-dot-event`), qui ne pose ni `border-width` ni `border-style` —
-   seule `.fc-h-event` (style "bloc", non utilisé ici) en définit un. Fixer la déclaration
-   complète garantit un contour visible quelle que soit la vue (Mois/Intervalle/Jour). */
-.fc-event.planning-event--mine {
-  background-color: var(--color-gold-100);
-  border: 1px solid var(--color-gold-400);
-  border-radius: 4px;
-}
-
-/* Surlignage de TOUS les créneaux réservés en vue Mois (`dayGridMonth`, `/agenda` et
-   `/planning`), peu importe le jour ou l'identité du créneau (anonymisé côté user-app,
-   autre utilisateur côté admin-app) — scopé via `.fc-dayGridMonth-view`, la classe que
-   FullCalendar pose lui-même sur le conteneur de la vue active, donc aucune donnée par
-   créneau n'est nécessaire côté `planningEntries.ts`. Mêmes déclarations que
-   `.planning-event--mine` ci-dessus ; ne s'applique pas aux vues Jour/Intervalle, où seul
-   "Ma réservation" reste gold. */
+/* Surlignage de TOUS les créneaux réservés en vue Mois (`dayGridMonth`), `admin-app`
+   UNIQUEMENT à partir de cette proposition (cf. règle `.user-agenda-calendar` ci-dessous,
+   plus spécifique par son ancêtre, qui prend le dessus côté user-app) — scopé via
+   `.fc-dayGridMonth-view`, la classe que FullCalendar pose lui-même sur le conteneur de la
+   vue active, donc aucune donnée par créneau n'est nécessaire côté `planningEntries.ts`.
+   `border` (pas seulement `border-color`) est nécessaire : un évènement chronométré (non
+   `allDay`) y est rendu par défaut en style "point" (`.fc-daygrid-dot-event`), qui ne pose
+   ni `border-width` ni `border-style`. */
 .fc-dayGridMonth-view .fc-event {
   background-color: var(--color-gold-100);
   border: 1px solid var(--color-gold-400);
   border-radius: 4px;
 }
 
-/* Extension du cadre doré (déjà appliqué en vue Mois, pour les deux apps, ci-dessus) aux
-   vues Jour et Semaine (desktop + mobile) — `user-app` UNIQUEMENT (cf. proposition
-   `detail-reservation-veilleur`). Les classes de vue FullCalendar elles-mêmes
-   (`.fc-timeGridDay-view`, `.fc-timeGridWeek-view`, `.fc-listWeek-view`) sont IDENTIQUES
-   dans les deux apps (`admin-app` a aussi des vues Jour/Semaine, cf.
-   `CalendrierPlanningAdmin.tsx`) : les cibler seules appliquerait aussi la règle côté
-   admin-app. Le scope "user-app uniquement" est donc obtenu via la classe marqueur
-   `.user-agenda-calendar`, posée uniquement sur le conteneur racine de
-   `apps/user-app/src/components/agenda/CalendrierReservations.tsx` (jamais côté
-   admin-app) — même idiome que `.planning-event--mine` ci-dessus (classe posée côté React,
-   combinée en CSS avec les classes natives de FullCalendar), plutôt qu'un fichier CSS
-   séparé. `.fc-event` (pas `.fc-list-event`) suffit même en vue liste : la vue `listWeek`
-   pose déjà `.fc-event` sur ses lignes (confirmé par le comportement existant de
-   `.planning-event--mine`, documenté comme "non scopé par vue, s'applique normalement" y
-   compris en Mode Semaine mobile, cf. `consultation-planning/spec.md`). */
-.user-agenda-calendar .fc-timeGridDay-view .fc-event,
-.user-agenda-calendar .fc-timeGridWeek-view .fc-event,
-.user-agenda-calendar .fc-listWeek-view .fc-event {
-  background-color: var(--color-gold-100);
-  border: 1px solid var(--color-gold-400);
+/* Agenda Veilleur (`user-app`, `/agenda`) : fond d'agenda blanc (inchangé, aucune teinte
+   posée sur les cellules), réservations en bloc bleu/texte blanc, dans TOUTES les vues
+   (Mois/Jour/Semaine/Intervalle/liste) — retour explicite au bleu classique d'un calendrier
+   après retour utilisateur sur le rendu doré précédent (illisible en vues Jour/Semaine :
+   texte resté blanc par défaut sur fond clair, cf. historique de ce fichier). Un seul style
+   pour toutes les réservations, "Ma réservation" comprise : le badge texte
+   (`renderPlanningEvent`) reste le seul signal qui la distingue des autres créneaux — plus
+   de distinction par la couleur.
+
+   Scope "user-app uniquement" via la classe marqueur `.user-agenda-calendar`, posée
+   uniquement sur le conteneur racine de `CalendrierReservations.tsx` (jamais côté
+   `admin-app`, dont le Mois reste doré via la règle ci-dessus, non concernée par cette
+   demande qui porte explicitement sur « l'espace Veilleur »). Spécificité (3 classes) plus
+   élevée que `.fc-dayGridMonth-view .fc-event` (2 classes) ci-dessus : prioritaire pour
+   cette app, y compris en vue Mois.
+
+   Palette `night` (la plus proche d'un bleu dans le thème partagé, cf. `theme.css` — pas de
+   bleu dédié) plutôt qu'une couleur hors charte.
+
+   Les variables `--fc-event-*` (en complément des propriétés littérales) sont nécessaires
+   pour les vues "bloc" (`.fc-h-event`/`.fc-v-event`, Jour/Semaine/Intervalle) : FullCalendar y
+   lit lui-même ces variables pour son propre texte/bordure. La vue "point" (Mois) et la vue
+   "liste" (`listWeek`) n'utilisent pas toutes ces variables pour leur fond, d'où les
+   propriétés littérales en plus (`background-color`/`border`/`color` posées directement sur
+   `.fc-event`, qui couvrent aussi ces styles). */
+.user-agenda-calendar .fc-event {
+  --fc-event-border-color: var(--color-night-700);
+  --fc-event-text-color: #fff;
+  background-color: var(--color-night-600);
+  border: 1px solid var(--color-night-700);
   border-radius: 4px;
+  color: #fff;
 }

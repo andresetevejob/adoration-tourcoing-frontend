@@ -49,7 +49,7 @@ describe("CalendrierReservations (user-app)", () => {
     expect(screen.getByRole("status", { name: "Chargement" })).toBeInTheDocument();
   });
 
-  it("rend le calendrier avec les entrées fournies une fois chargé", () => {
+  it("rend le calendrier avec les entrées fournies une fois chargé, sans jamais révéler l'identité sur la tuile (titre générique + badge « Ma réservation » comme seul signal)", () => {
     render(
       <CalendrierReservations
         periode={{ mode: "jour", date: "2026-01-01" }}
@@ -59,10 +59,11 @@ describe("CalendrierReservations (user-app)", () => {
     );
 
     expect(screen.queryByRole("status", { name: "Chargement" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
+    expect(screen.getByText(/Créneau réservé/)).toBeInTheDocument();
+    expect(screen.getByLabelText("Ma réservation")).toBeInTheDocument();
   });
 
-  it("anonymise le titre pour une entrée estAnonymise=true", () => {
+  it("n'affiche pas le badge « Ma réservation » pour une entrée estAnonymise=true (titre déjà générique dans les deux cas)", () => {
     render(
       <CalendrierReservations
         periode={{ mode: "jour", date: "2026-01-01" }}
@@ -72,6 +73,7 @@ describe("CalendrierReservations (user-app)", () => {
     );
 
     expect(screen.getByText(/Créneau réservé/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Ma réservation")).not.toBeInTheDocument();
   });
 
   it("appelle onEventClick avec l'événement cliqué quand la prop est fournie", () => {
@@ -85,7 +87,7 @@ describe("CalendrierReservations (user-app)", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText(/Jean Dupont/));
+    fireEvent.click(screen.getByText(/Créneau réservé/));
 
     expect(onEventClick).toHaveBeenCalledTimes(1);
     expect(onEventClick.mock.calls[0][0].event.id).toBe("e1");
@@ -101,7 +103,7 @@ describe("CalendrierReservations (user-app)", () => {
     );
 
     expect(() => {
-      fireEvent.click(screen.getByText(/Jean Dupont/));
+      fireEvent.click(screen.getByText(/Créneau réservé/));
     }).not.toThrow();
   });
 
@@ -116,7 +118,7 @@ describe("CalendrierReservations (user-app)", () => {
       />,
     );
 
-    expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
+    expect(screen.getByText(/Créneau réservé/)).toBeInTheDocument();
   });
 
   // Non-régression visuelle CSS (`detail-reservation-veilleur`, 3.6) : le conteneur

@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import type { PlanningEntryResponse } from "@chapelle/shared/types";
-import { Badge } from "@chapelle/shared/ui";
 import { formatDate, formatTime } from "@chapelle/shared/utils";
 import { mapPlanningEntriesToEvents } from "./planningEntries";
+import { StarIcon } from "./StarIcon";
 
 export interface ListeCreneauxJourProps {
   date: string; // "yyyy-MM-dd", jour tapé
@@ -29,11 +29,15 @@ export function ListeCreneauxJour({ date, entries }: ListeCreneauxJourProps): Re
         <ul className="flex flex-col divide-y divide-pearl">
           {events.map((event) => (
             <li key={event.id} className="flex items-center gap-2 py-2 text-sm">
-              <span className="font-medium text-night-800">
+              <span className="shrink-0 font-medium text-night-800">
                 {formatTime(event.start)} – {formatTime(event.end)}
               </span>
-              <span className="truncate">{event.title}</span>
-              {event.extendedProps.isMine && <Badge variant="info">Ma réservation</Badge>}
+              <span className="min-w-0 flex-1 truncate">{event.title}</span>
+              {event.extendedProps.isMine && (
+                <span title="Ma réservation" aria-label="Ma réservation" className="shrink-0 text-night-700">
+                  <StarIcon />
+                </span>
+              )}
             </li>
           ))}
         </ul>

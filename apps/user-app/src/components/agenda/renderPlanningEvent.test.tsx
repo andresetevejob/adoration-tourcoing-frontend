@@ -113,22 +113,22 @@ describe("renderPlanningEvent (user-app)", () => {
     expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
   });
 
-  it("affiche le badge « Ma réservation » quand isMine est vrai", () => {
+  it("affiche l'icône « Ma réservation » quand isMine est vrai", () => {
     render(<>{renderPlanningEvent(buildArg({ title: "Jean Dupont", isMine: true }))}</>);
 
-    expect(screen.getByText("Ma réservation")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ma réservation")).toBeInTheDocument();
   });
 
-  it("n'affiche pas le badge quand isMine est faux", () => {
+  it("n'affiche pas l'icône quand isMine est faux", () => {
     render(<>{renderPlanningEvent(buildArg({ title: "Créneau réservé", isMine: false }))}</>);
 
-    expect(screen.queryByText("Ma réservation")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Ma réservation")).not.toBeInTheDocument();
   });
 
-  it("affiche le badge « Ma réservation » en vue liste (listWeek) malgré l'absence d'heure", () => {
+  it("affiche l'icône « Ma réservation » en vue liste (listWeek) malgré l'absence d'heure", () => {
     render(<>{renderPlanningEvent(buildArg({ title: "Jean Dupont", isMine: true, viewType: "listWeek" }))}</>);
 
-    expect(screen.getByText("Ma réservation")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ma réservation")).toBeInTheDocument();
     expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
   });
 });

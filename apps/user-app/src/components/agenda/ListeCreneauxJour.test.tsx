@@ -25,7 +25,7 @@ describe("components/agenda/ListeCreneauxJour (user-app)", () => {
     expect(screen.getByText("Aucun créneau ce jour-là.")).toBeInTheDocument();
   });
 
-  it("affiche le titre (identité ou anonymisé) et les horaires de chaque créneau", () => {
+  it("n'affiche jamais l'identité (titre toujours générique) et affiche les horaires de chaque créneau", () => {
     render(
       <ListeCreneauxJour
         date="2026-01-15"
@@ -33,12 +33,12 @@ describe("components/agenda/ListeCreneauxJour (user-app)", () => {
       />,
     );
 
-    expect(screen.getByText("Jean Dupont")).toBeInTheDocument();
-    expect(screen.getByText("Créneau réservé")).toBeInTheDocument();
+    expect(screen.getAllByText("Créneau réservé")).toHaveLength(2);
+    expect(screen.queryByText("Jean Dupont")).not.toBeInTheDocument();
     expect(screen.queryByText("Aucun créneau ce jour-là.")).not.toBeInTheDocument();
   });
 
-  it("affiche le badge « Ma réservation » uniquement pour les entrées non anonymisées (isMine)", () => {
+  it("affiche l'icône « Ma réservation » uniquement pour les entrées non anonymisées (isMine)", () => {
     render(
       <ListeCreneauxJour
         date="2026-01-15"
@@ -46,6 +46,6 @@ describe("components/agenda/ListeCreneauxJour (user-app)", () => {
       />,
     );
 
-    expect(screen.getAllByText("Ma réservation")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Ma réservation")).toHaveLength(1);
   });
 });

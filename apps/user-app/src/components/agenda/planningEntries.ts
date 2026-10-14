@@ -13,7 +13,12 @@ export interface PlanningCalendarEvent {
 }
 
 /**
- * `title` : `estAnonymise ? "Créneau réservé" : "<prénoms> <nom>"` (US-AGENDA-01/02).
+ * `title` : toujours `"Créneau réservé"`, y compris pour sa propre réservation — l'identité
+ * complète du bénéficiaire ne se révèle que via `ReservationDetailModal`/
+ * `ReservationConfirmModal` (clic explicite, cf. `openspec/specs/reservation-adoration/spec.md`
+ * "Détail d'une réservation"), jamais directement sur la tuile du calendrier. Pour "Ma
+ * réservation", le badge texte (`renderPlanningEvent`) reste le seul signal qui la distingue
+ * des autres créneaux.
  * `isMine` = `!estAnonymise` : dérivé du même signal backend, pas d'un second calcul
  * client comparant `idUtilisateur` à l'utilisateur connecté — le composant n'applique
  * jamais de logique d'anonymisation, il ne fait que réutiliser le résultat déjà fourni
@@ -25,9 +30,7 @@ export function mapPlanningEntryToEvent(entry: PlanningEntryResponse): PlanningC
     id: entry.id,
     start: entry.dateDebut,
     end: entry.dateFin,
-    title: entry.estAnonymise
-      ? "Créneau réservé"
-      : `${entry.prenomsUtilisateur} ${entry.nomUtilisateur}`,
+    title: "Créneau réservé",
     classNames: isMine ? ["planning-event--mine"] : [],
     extendedProps: {
       roleUtilisateur: entry.roleUtilisateur,

@@ -60,9 +60,9 @@ type PlanningPeriode =
   ci-dessous) : bascule vers `listWeek` (liste chronologique) au lieu de `timeGridWeek`.
 - Affichage des créneaux : heure affichée = `arg.timeText` (début seul), comme en vue "Jour" — voir
   "Affichage des créneaux" ci-dessous.
-- Surlignage de tous les créneaux réservés (gold) : étendu à cette vue, `user-app` uniquement (cf.
-  "Affichage des créneaux" → "Surlignage de tous les créneaux réservés"). Le surlignage "Ma
-  réservation" n'est pas scopé par vue et s'applique normalement.
+- Surlignage des réservations (bloc bleu/texte blanc) : s'applique à cette vue comme à toutes les
+  autres, `user-app` uniquement (cf. "Affichage des créneaux" → "Surlignage des réservations dans
+  l'agenda Veilleur").
 
 ### Mode Mois
 - Contrôle : sélecteur `react-datepicker` (`showMonthYearPicker`, locale française via
@@ -113,7 +113,7 @@ WHEN la largeur d'écran est inférieure à 768px THEN la vue FullCalendar bascu
 vers `listWeek` (plugin `@fullcalendar/list`) — liste chronologique des créneaux groupés par jour.
 La colonne heure native du plugin (`.fc-list-event-time`) affiche déjà l'heure de début :
 `renderPlanningEvent` ne rend aucune heure pour cette vue (ni `arg.timeText`, ni la plage calculée),
-pour éviter un doublon visuel — seuls le titre et le badge « Ma réservation » éventuel sont rendus.
+pour éviter un doublon visuel — seuls le titre et l'icône « Ma réservation » éventuelle sont rendus.
 
 ### Mode Mois, mobile
 WHEN la largeur d'écran est inférieure à 768px THEN taper un jour (`dateClick`) affiche la liste des
@@ -189,58 +189,62 @@ WHY : un créneau d'adoration reste toujours sur un seul jour calendaire (garant
 aucune variante de format `dd/MM` n'est nécessaire pour distinguer un éventuel chevauchement de
 minuit.
 
-### Surlignage "Ma réservation" (`user-app` uniquement)
+### Surlignage des réservations dans l'agenda Veilleur (`user-app`, toutes vues)
 
-WHEN `extendedProps.isMine` est vrai (`user-app` uniquement — toujours `false` côté `admin-app`, cf.
-Hors périmètre) THEN le créneau est surligné visuellement : fond `gold-100`/bordure `gold-400`
-(`.fc-event.planning-event--mine`, `packages/shared/src/ui/fullcalendar-overrides.css`, importé
-uniquement par `apps/user-app/src/index.css`), en complément du badge texte « Ma réservation »
-existant (la couleur seule ne suffit pas comme signal d'accessibilité — WCAG 1.4.1).
+WHEN un Veilleur consulte `/agenda`, quel que soit le mode (Mois/Jour/Semaine/Intervalle/liste
+mobile) THEN chaque créneau réservé affiché — "Ma réservation" ou celle d'un autre Veilleur,
+anonymisée ou non — est rendu en bloc bleu (`night-600`, bordure `night-700`) avec texte blanc, sur
+un fond d'agenda resté blanc (aucune teinte posée sur les cellules elles-mêmes). Un seul style pour
+tous les créneaux : plus de distinction par la couleur entre "Ma réservation" et les autres — une
+icône étoile (`StarIcon`, `extendedProps.isMine`, cf. `renderPlanningEvent`/`ListeCreneauxJour`)
+reste le seul signal qui la distingue, avec un nom accessible (`aria-label`/`title="Ma
+réservation"`) porté par le `<span>` qui l'englobe — remplace l'ancien badge texte, devenu
+redondant une fois la couleur identique pour tous les créneaux.
 
-### Surlignage de tous les créneaux réservés (vues Mois, Jour, Semaine)
+Implémentation : règle unique `.user-agenda-calendar .fc-event`
+(`packages/shared/src/ui/fullcalendar-overrides.css`), scopée `user-app` uniquement via la classe
+marqueur `.user-agenda-calendar` posée sur le conteneur racine de `CalendrierReservations.tsx`
+(jamais côté `admin-app`) — sa spécificité (3 classes) prend le dessus sur la règle Mois partagée
+ci-dessous, y compris en vue Mois côté `user-app`. Couvre toutes les vues en une seule déclaration
+(plus besoin de cibler les classes de vue FullCalendar individuellement) : propriétés littérales
+(`background-color`/`border`/`color`) pour les rendus "point" (Mois) et "liste" (`listWeek`
+mobile), complétées par les variables internes de FullCalendar (`--fc-event-border-color`,
+`--fc-event-text-color`) pour les rendus "bloc" (Jour/Semaine/Intervalle, `.fc-h-event`/
+`.fc-v-event`) qui lisent ces variables pour leur propre texte/bordure — sans cette redéfinition, le
+texte y restait blanc par défaut (pensé pour un fond saturé), illisible sur un fond clair (régression
+constatée avec un rendu doré précédent, abandonné pour cette raison).
 
-#### Vue Mois (`user-app` et `admin-app`)
+WHY (choix du bleu) : demande explicite de l'utilisateur après retour d'usage sur un rendu doré
+jugé peu lisible — préférence pour un rendu de calendrier classique (bloc bleu/texte blanc). Palette
+`night` du thème partagé utilisée (teinte la plus proche d'un bleu dans ce thème ; pas de palette
+bleue dédiée) plutôt qu'une couleur hors charte.
 
-WHEN le mode est "Mois" (`dayGridMonth`) THEN chaque créneau affiché — quel que soit son propriétaire,
-anonymisé ou non — est encadré visuellement (fond `gold-100`/bordure `gold-400`), pour distinguer au
-premier coup d'œil les créneaux réservés des jours vides dans la grille du mois. But : lisibilité de
-la densité de réservations sur le mois, pas un signal propre à l'utilisateur connecté (contrairement à
-"Ma réservation" ci-dessus).
+### Surlignage de tous les créneaux réservés en vue Mois (`admin-app` uniquement)
+
+WHEN le mode est "Mois" (`dayGridMonth`) côté `admin-app` THEN chaque créneau affiché — quel que soit
+son propriétaire — est encadré visuellement (fond `gold-100`/bordure `gold-400`), pour distinguer au
+premier coup d'œil les créneaux réservés des jours vides dans la grille du mois. Comportement
+inchangé pour `admin-app` (non concerné par la demande qui porte explicitement sur « l'espace
+Veilleur », cf. section ci-dessus).
 
 Implémentation : règle CSS scopée à la vue (`.fc-dayGridMonth-view .fc-event`,
 `packages/shared/src/ui/fullcalendar-overrides.css`), s'appuyant sur la classe que FullCalendar pose
 lui-même sur le conteneur de la vue active (`.fc-view.fc-dayGridMonth-view`) — aucune donnée par
 créneau n'est nécessaire, donc aucun changement dans `mapPlanningEntryToEvent`/
-`mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Jamais actif en vue "Intervalle" (vue
-`dayGrid` custom, classe de vue différente).
-
-#### Vues Jour et Semaine (`user-app` uniquement)
-
-WHEN le mode est "Jour" (`timeGridDay`) ou "Semaine" (`timeGridWeek` desktop, `listWeek` mobile — cf.
-"Adaptation mobile de l'Agenda") THEN chaque créneau affiché est également encadré visuellement (même
-style `gold-100`/`gold-400`) — extension volontaire du même principe de lisibilité, limitée à
-`user-app` (demande portant explicitement sur « l'espace Veilleur » ; `admin-app`, qui possède
-pourtant les mêmes vues Jour/Semaine via `CalendrierPlanningAdmin.tsx`, n'est pas concerné).
-
-Implémentation : comme les classes de vue FullCalendar (`.fc-timeGridDay-view`,
-`.fc-timeGridWeek-view`, `.fc-listWeek-view`) sont identiques dans les deux apps, les cibler seules
-appliquerait aussi la règle côté `admin-app`. Le scope "user-app uniquement" est donc obtenu via une
-classe marqueur posée côté React — `.user-agenda-calendar`, sur le conteneur racine de
-`CalendrierReservations.tsx` (jamais posée côté `admin-app`) — combinée en CSS avec les classes de
-vue ci-dessus (`packages/shared/src/ui/fullcalendar-overrides.css`), même idiome que le scope déjà en
-place pour "Ma réservation" (`.planning-event--mine`, jamais posée côté `admin-app` non plus).
-
-Un créneau qui est à la fois "Ma réservation" et couvert par l'une de ces règles (Mois, Jour ou
-Semaine) cumule les deux règles CSS (mêmes déclarations, pas de conflit visuel) ; le badge texte « Ma
-réservation » reste le seul signal propre à l'utilisateur connecté dans ces vues.
+`mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Côté `user-app`, cette règle existe
+toujours dans le fichier partagé mais est systématiquement supplantée par la règle bleue ci-dessus
+(spécificité supérieure via `.user-agenda-calendar`).
 
 ## Hors périmètre de cette spec
 
 - Format de date à la création d'une réservation (`CreateBookingRequest.dateDebut`/`dateFin`) :
   voir `openspec/specs/reservation-adoration/spec.md`.
-- Anonymisation des identités selon le rôle consultant, actions de réservation/annulation sur le
-  calendrier : comportement déjà en place, non modifié par cette spec, non détaillé ici plus avant
-  faute de spec source dédiée existante — cf. code (`mapPlanningEntriesToEvents`)
-  et `aidlc-docs/construction/plans/u2-agenda-planning-design.md`/`u3-reservation-annulation-design.md`.
-- Badge rôle/« Ma réservation » (texte), titre du créneau (identité ou "Créneau réservé") : rendu déjà
-  en place, non modifié par ce qui précède, cf. code.
+- Actions de réservation/annulation sur le calendrier : comportement déjà en place, non modifié par
+  cette spec, non détaillé ici plus avant faute de spec source dédiée existante — cf. code
+  (`mapPlanningEntriesToEvents`) et `aidlc-docs/construction/plans/
+  u2-agenda-planning-design.md`/`u3-reservation-annulation-design.md`.
+- Badge rôle (hors « Ma réservation », cf. "Surlignage des réservations" ci-dessus) : rendu déjà en
+  place, non modifié par ce qui précède, cf. code. Titre du créneau : **toujours**
+  `"Créneau réservé"`, y compris pour sa propre réservation —
+  l'identité ne se révèle jamais directement sur la tuile, seulement au clic (cf.
+  `openspec/specs/reservation-adoration/spec.md`, "Détail d'une réservation").
