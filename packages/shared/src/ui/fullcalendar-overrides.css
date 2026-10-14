@@ -32,3 +32,26 @@
   border: 1px solid var(--color-gold-400);
   border-radius: 4px;
 }
+
+/* Extension du cadre doré (déjà appliqué en vue Mois, pour les deux apps, ci-dessus) aux
+   vues Jour et Semaine (desktop + mobile) — `user-app` UNIQUEMENT (cf. proposition
+   `detail-reservation-veilleur`). Les classes de vue FullCalendar elles-mêmes
+   (`.fc-timeGridDay-view`, `.fc-timeGridWeek-view`, `.fc-listWeek-view`) sont IDENTIQUES
+   dans les deux apps (`admin-app` a aussi des vues Jour/Semaine, cf.
+   `CalendrierPlanningAdmin.tsx`) : les cibler seules appliquerait aussi la règle côté
+   admin-app. Le scope "user-app uniquement" est donc obtenu via la classe marqueur
+   `.user-agenda-calendar`, posée uniquement sur le conteneur racine de
+   `apps/user-app/src/components/agenda/CalendrierReservations.tsx` (jamais côté
+   admin-app) — même idiome que `.planning-event--mine` ci-dessus (classe posée côté React,
+   combinée en CSS avec les classes natives de FullCalendar), plutôt qu'un fichier CSS
+   séparé. `.fc-event` (pas `.fc-list-event`) suffit même en vue liste : la vue `listWeek`
+   pose déjà `.fc-event` sur ses lignes (confirmé par le comportement existant de
+   `.planning-event--mine`, documenté comme "non scopé par vue, s'applique normalement" y
+   compris en Mode Semaine mobile, cf. `consultation-planning/spec.md`). */
+.user-agenda-calendar .fc-timeGridDay-view .fc-event,
+.user-agenda-calendar .fc-timeGridWeek-view .fc-event,
+.user-agenda-calendar .fc-listWeek-view .fc-event {
+  background-color: var(--color-gold-100);
+  border: 1px solid var(--color-gold-400);
+  border-radius: 4px;
+}

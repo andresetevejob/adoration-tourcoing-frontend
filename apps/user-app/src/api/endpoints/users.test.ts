@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UserRole, StatutValidation, type UserResponse } from "@chapelle/shared/types";
-import { updateUser } from "./users";
+import { getUserPhoto, updateUser } from "./users";
 
-const { putMock } = vi.hoisted(() => ({ putMock: vi.fn() }));
+const { putMock, getBlobMock } = vi.hoisted(() => ({ putMock: vi.fn(), getBlobMock: vi.fn() }));
 
 vi.mock("../client", () => ({
   apiClient: {
     get: vi.fn(),
+    getBlob: getBlobMock,
     post: vi.fn(),
     put: putMock,
     delete: vi.fn(),
@@ -26,6 +27,7 @@ const user: UserResponse = {
 describe("api/endpoints/users (user-app)", () => {
   beforeEach(() => {
     putMock.mockReset();
+    getBlobMock.mockReset();
   });
 
   it("updateUser() effectue un PUT sur /users/{id} avec le dto", async () => {
@@ -36,5 +38,15 @@ describe("api/endpoints/users (user-app)", () => {
 
     expect(putMock).toHaveBeenCalledWith("/users/1", dto);
     expect(result).toBe(user);
+  });
+
+  it("getUserPhoto() effectue un getBlob sur /users/{id}/photo avec skipForbiddenRedirect (point critique : un 403 reçu en consultant la photo d'un AUTRE Veilleur ne doit jamais rediriger toute l'app vers /non-autorise)", async () => {
+    const fakeBlob = new Blob(["contenu"], { type: "image/jpeg" });
+    getBlobMock.mockResolvedValueOnce(fakeBlob);
+
+    const result = await getUserPhoto("1");
+
+    expect(getBlobMock).toHaveBeenCalledWith("/users/1/photo", { skipForbiddenRedirect: true });
+    expect(result).toBe(fakeBlob);
   });
 });

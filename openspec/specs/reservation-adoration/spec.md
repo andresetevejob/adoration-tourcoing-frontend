@@ -77,3 +77,32 @@ pas) ; c'est une règle métier frontend pure, en attente de confirmation/aligne
 `exceedsMaxDuration(dateDebut, dateFin, maxHeures = 24): boolean`
 (`packages/shared/src/utils/formatters.ts`), utilisée par les deux points de vérification ci-dessus
 dans les deux applications.
+
+## Détail d'une réservation (modale, tout créneau visible par un Veilleur)
+
+WHEN un Veilleur clique sur un créneau affiché dans `/agenda` (`PageAgenda.tsx`, `onEventClick`,
+quelle que soit la vue) THEN une modale s'ouvre systématiquement — plus seulement pour ses propres
+réservations :
+- Si le créneau est sa propre réservation (`isMine`) : `ReservationConfirmModal` (variant `cancel`,
+  comportement inchangé) s'ouvre, désormais complétée de la photo du bénéficiaire (soi-même, cf.
+  `gestion-utilisateurs/spec.md`, "Affichage de la photo d'un bénéficiaire dans l'agenda").
+- Sinon : `ReservationDetailModal` (nouveau composant, lecture seule — aucune action, aucune
+  mutation) s'ouvre, affichant les dates, le nom complet du bénéficiaire
+  (`PlanningEntryResponse.nomUtilisateur`/`prenomsUtilisateur`), sa description éventuelle et sa
+  photo (cf. `gestion-utilisateurs/spec.md`).
+
+Un seul des deux états (`bookingToCancel`/`bookingToView`) n'est jamais non-`null` à la fois —
+garanti par le `if`/`else` sur `isMine` dans `onEventClick`, combiné au fait qu'une `Modal` ouverte
+bloque toute interaction avec le calendrier sous-jacent tant qu'elle n'est pas fermée.
+
+WHY (anonymisation non remise en cause) : le **titre affiché sur la grille du calendrier** reste
+anonymisé selon les règles déjà en place (badge rôle / "Créneau réservé", cf. "Hors périmètre"
+ci-dessous) — seul le **contenu de la modale ouverte après un clic explicite** révèle l'identité
+complète du bénéficiaire, pour tout Veilleur consultant n'importe quel créneau (pas seulement les
+siens). Avant cette section, cliquer sur la réservation d'un autre Veilleur n'avait aucun effet.
+
+### Hors périmètre de cette section
+- Rôles autres que Veilleur (Adorateur, visiteur non connecté) : clic sans effet, comportement
+  inchangé (`onEventClick` n'est défini que pour `UserRole.VEILLEUR`).
+- Anonymisation du titre affiché directement sur la grille (`mapPlanningEntriesToEvents`) : non
+  modifiée par cette section.

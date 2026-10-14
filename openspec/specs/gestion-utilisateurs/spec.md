@@ -65,3 +65,38 @@ démontage** du composant, l'URL précédente resterait affichée sans être ré
 avec les flux actuels (aucune action de ce repo ne retire une photo existante sans navigation
 complète) — à corriger si une future fonctionnalité de suppression/remplacement de photo depuis
 cette page est ajoutée.
+
+## Affichage de la photo d'un bénéficiaire dans l'agenda (`user-app`)
+
+WHEN un Veilleur ouvre la modale de confirmation d'annulation de sa propre réservation
+(`ReservationConfirmModal`, variant `cancel`) OU la modale de détail d'une réservation d'un autre
+Veilleur (`ReservationDetailModal`, cf. `reservation-adoration/spec.md`) THEN la photo du
+bénéficiaire concerné (soi-même dans le premier cas, un autre Veilleur dans le second) est
+récupérée et affichée dans `ReservationCard` (miniature circulaire ~96px, même style que
+`UserProfile.tsx` ci-dessus), selon le même principe de dégradation silencieuse que la fiche admin
+(aucune photo récupérable ⇒ bloc simplement absent, aucun message d'erreur).
+
+Contrairement à la fiche admin, l'appel `GET /users/{id}/photo` est **toujours tenté** côté user-app
+(`getUserPhoto`/`useUserPhoto`, `apps/user-app/src/{api/endpoints/users.ts,hooks/useUserPhoto.ts}`,
+miroir de l'implémentation admin-app) : `PlanningEntryResponse` ne porte aucun indicateur `hasPhoto`
+(contrairement à `UserResponse.photo`) permettant de court-circuiter l'appel à l'avance. `retry:
+false` (plutôt que le comportement par défaut de TanStack Query) : une absence de photo (404) y est
+une issue courante, pas une anomalie réseau transitoire.
+
+`getUserPhoto` (user-app) passe `skipForbiddenRedirect: true` à `apiClient.getBlob` — différence
+volontaire avec l'équivalent admin-app : sans cette option, un 403 (cf. limitation ci-dessous)
+redirigerait toute l'application vers `/non-autorise` au lieu de simplement ne pas afficher la photo,
+ce qui serait un recul d'expérience sévère pour un simple clic sur la réservation d'un collègue.
+
+### Limitation connue (documentée, non bloquante) — autorisation backend non confirmée pour la photo d'un autre Veilleur
+
+`GET /users/{id}/photo` est documenté ci-dessus comme accessible seulement au **titulaire ou à un
+administrateur**. Un Veilleur consultant `ReservationDetailModal` pour la réservation d'un **autre**
+Veilleur ne correspond à aucun des deux cas : au jour de la graduation de cette section, une
+éventuelle extension de cette autorisation backend n'a **pas été confirmée**. En l'état, si
+l'autorisation reste strictement limitée au titulaire/administrateur, l'appel renvoie 403 et, du
+fait de la dégradation silencieuse ci-dessus, **la photo ne s'affiche jamais pour la réservation d'un
+autre Veilleur — seul son nom est visible** (`ReservationDetailModal` reste pleinement fonctionnelle
+sans la photo). Pour sa propre réservation (`ReservationConfirmModal`, variant `cancel`), la photo
+s'affiche normalement (titulaire = utilisateur connecté, cas déjà autorisé). À lever si/quand
+l'autorisation backend est confirmée ou élargie.

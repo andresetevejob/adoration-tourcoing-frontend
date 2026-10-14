@@ -99,7 +99,7 @@ export default function CalendrierReservations({
   const dayEntries = selectedDay ? filterEntriesByDay(entries, selectedDay) : [];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 user-agenda-calendar">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
         {...resolveCalendarConfig(periode, isMobile)}

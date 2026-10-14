@@ -14,6 +14,7 @@ import { FiltreDatePlanning } from "../components/agenda/FiltreDatePlanning";
 import { FiltreMesReservations } from "../components/agenda/FiltreMesReservations";
 import { ReservationForm, type ReservationFormValues } from "../components/agenda/ReservationForm";
 import { ReservationConfirmModal } from "../components/agenda/ReservationConfirmModal";
+import { ReservationDetailModal } from "../components/agenda/ReservationDetailModal";
 
 // FullCalendar n'est chargé (chunk séparé) que lorsque ce composant est effectivement
 // monté — jamais importé statiquement par cette page ni par `router.tsx` (§4.3.1).
@@ -30,6 +31,7 @@ export default function PageAgenda() {
   const [selectedSlot, setSelectedSlot] = useState<{ start: string; end: string } | null>(null);
   const [pendingCreateDto, setPendingCreateDto] = useState<CreateBookingRequest | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<PlanningEntryResponse | null>(null);
+  const [bookingToView, setBookingToView] = useState<PlanningEntryResponse | null>(null);
   const { role, user } = useAuth();
   const planningQuery = usePlanning(periode);
   const createBooking = useCreateBooking();
@@ -53,18 +55,21 @@ export default function PageAgenda() {
   // quel, pas de second calcul client. `entries` (pas `visibleEntries`) pour disposer de
   // tous les champs de `PlanningEntryResponse` (id, description, etc., cf. conception
   // U3 §8.1, point ouvert n°6 sur l'hypothèse `PlanningEntryResponse.id === BookingResponse.id`).
+  // Déclenché désormais pour toute réservation (plus seulement les siennes) : route vers
+  // la modale d'annulation si `isMine`, vers la modale de détail (lecture seule) sinon.
   const onEventClick =
     role === UserRole.VEILLEUR
       ? (info: EventClickArg) => {
-          const isMine = Boolean(info.event.extendedProps.isMine);
-          if (!isMine) {
-            return;
-          }
           const fullEntry = entries.find((candidate) => candidate.id === info.event.id);
           if (!fullEntry) {
             return;
           }
-          setBookingToCancel(fullEntry);
+          const isMine = Boolean(info.event.extendedProps.isMine);
+          if (isMine) {
+            setBookingToCancel(fullEntry);
+          } else {
+            setBookingToView(fullEntry);
+          }
         }
       : undefined;
 
@@ -72,6 +77,7 @@ export default function PageAgenda() {
     setSelectedSlot(null);
     setPendingCreateDto(null);
     setBookingToCancel(null);
+    setBookingToView(null);
   }
 
   function handleReservationFormSubmit(values: ReservationFormValues): void {
@@ -153,6 +159,9 @@ export default function PageAgenda() {
           isSubmitting={cancelBooking.isPending}
           onConfirm={handleConfirmCancel}
         />
+      )}
+      {bookingToView && (
+        <ReservationDetailModal isOpen onClose={closeAll} booking={bookingToView} />
       )}
     </div>
   );

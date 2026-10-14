@@ -119,6 +119,47 @@ describe("CalendrierReservations (user-app)", () => {
     expect(screen.getByText(/Jean Dupont/)).toBeInTheDocument();
   });
 
+  // Non-régression visuelle CSS (`detail-reservation-veilleur`, 3.6) : le conteneur
+  // racine doit porter la classe marqueur `.user-agenda-calendar`, seul mécanisme de
+  // scope "user-app uniquement" de la règle CSS étendant le cadre doré aux vues
+  // Jour/Semaine (`packages/shared/src/ui/fullcalendar-overrides.css`) — cette classe
+  // n'existe nulle part côté `admin-app` (`CalendrierPlanningAdmin.tsx`). Un test
+  // explicite sur la présence de cette classe ET sur les classes de vue FullCalendar
+  // elles-mêmes garantit qu'un futur renommage de l'une ou l'autre ferait échouer ce
+  // test plutôt que de casser silencieusement le style (même esprit que les
+  // assertions `.fc-view`/`.fc-dayGridMonth-view` ci-dessous).
+  it("pose la classe marqueur .user-agenda-calendar sur le conteneur racine, combinée aux classes de vue FullCalendar (Jour/Semaine/listWeek)", () => {
+    const { container: dayContainer } = render(
+      <CalendrierReservations periode={{ mode: "jour", date: "2026-01-01" }} entries={[]} isLoading={false} />,
+    );
+    const dayRoot = dayContainer.querySelector(".user-agenda-calendar");
+    expect(dayRoot).not.toBeNull();
+    expect(dayRoot?.querySelector(".fc-timeGridDay-view")).not.toBeNull();
+
+    const { container: weekContainer } = render(
+      <CalendrierReservations
+        periode={{ mode: "semaine", dateDebut: "2026-01-05" }}
+        entries={[]}
+        isLoading={false}
+      />,
+    );
+    const weekRoot = weekContainer.querySelector(".user-agenda-calendar");
+    expect(weekRoot).not.toBeNull();
+    expect(weekRoot?.querySelector(".fc-timeGridWeek-view")).not.toBeNull();
+
+    mockMobileViewport(true);
+    const { container: listContainer } = render(
+      <CalendrierReservations
+        periode={{ mode: "semaine", dateDebut: "2026-01-05" }}
+        entries={[]}
+        isLoading={false}
+      />,
+    );
+    const listRoot = listContainer.querySelector(".user-agenda-calendar");
+    expect(listRoot).not.toBeNull();
+    expect(listRoot?.querySelector(".fc-listWeek-view")).not.toBeNull();
+  });
+
   describe("résolution de la vue FullCalendar selon le mode", () => {
     it("mode jour : vue timeGridDay", () => {
       const { container } = render(

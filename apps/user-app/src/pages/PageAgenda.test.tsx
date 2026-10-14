@@ -122,6 +122,23 @@ vi.mock("../components/agenda/ReservationConfirmModal", () => ({
   ),
 }));
 
+vi.mock("../components/agenda/ReservationDetailModal", () => ({
+  ReservationDetailModal: ({
+    booking,
+    onClose,
+  }: {
+    booking: PlanningEntryResponse;
+    onClose: () => void;
+  }) => (
+    <div data-testid="detail-modal">
+      <span data-testid="detail-modal-booking-id">{booking.id}</span>
+      <button type="button" onClick={onClose}>
+        fermer-detail
+      </button>
+    </div>
+  ),
+}));
+
 const veilleur: UserResponse = {
   id: "u1",
   email: "v@b.com",
@@ -326,23 +343,79 @@ describe("pages/PageAgenda (user-app)", () => {
     );
   });
 
-  it("ouvre ReservationConfirmModal (cancel) au clic sur une entrée « à soi » et ignore le clic sur une entrée d'un tiers", async () => {
+  it("ouvre ReservationConfirmModal (cancel) au clic sur une entrée « à soi » et ReservationDetailModal au clic sur une entrée d'un tiers", async () => {
     mockAuth(veilleur, UserRole.VEILLEUR);
-    mockPlanning({ content: [entry("e1", veilleur.id)], page: 0, size: 20, totalElements: 1, totalPages: 1, last: true });
+    mockPlanning({
+      content: [entry("e1", veilleur.id), entry("e2", "autre-utilisateur")],
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      totalPages: 1,
+      last: true,
+    });
     mockCreateBooking();
     const mutate = mockCancelBooking();
 
     render(<PageAgenda />);
 
     await screen.findByTestId("calendrier-stub");
+
+    // Clic sur l'entrée d'un tiers (e2, isMine=false) : ouvre désormais la modale de
+    // détail (lecture seule), plus de "clic sans effet" (changement de comportement de
+    // cette proposition) — et surtout PAS la modale de confirmation d'annulation.
     fireEvent.click(screen.getByText("simuler-clic-autre"));
+    const detailModal = await screen.findByTestId("detail-modal");
+    expect(detailModal).toBeInTheDocument();
+    expect(screen.getByTestId("detail-modal-booking-id")).toHaveTextContent("e2");
     expect(screen.queryByTestId("confirm-modal-cancel")).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByText("fermer-detail"));
+    expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
+
+    // Clic sur sa propre entrée (e1, isMine=true) : ouvre toujours la modale de
+    // confirmation d'annulation (non régressé).
     fireEvent.click(screen.getByText("simuler-clic-mine"));
     const confirmModal = await screen.findByTestId("confirm-modal-cancel");
     expect(confirmModal).toBeInTheDocument();
+    expect(screen.queryByTestId("detail-modal")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText("confirmer-cancel"));
     expect(mutate).toHaveBeenCalledWith("e1", expect.anything());
+  });
+
+  it("onEventClick reste undefined (clic sans effet) pour un visiteur anonyme", async () => {
+    mockAuth(null, null);
+    mockPlanning({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, last: true });
+    mockCreateBooking();
+    mockCancelBooking();
+
+    render(<PageAgenda />);
+
+    await screen.findByTestId("calendrier-stub");
+    expect(screen.getByTestId("clickable")).toHaveTextContent("false");
+  });
+
+  it("onEventClick reste undefined (clic sans effet) pour un ADORATEUR", async () => {
+    mockAuth(adorateur, UserRole.ADORATEUR);
+    mockPlanning({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, last: true });
+    mockCreateBooking();
+    mockCancelBooking();
+
+    render(<PageAgenda />);
+
+    await screen.findByTestId("calendrier-stub");
+    expect(screen.getByTestId("clickable")).toHaveTextContent("false");
+  });
+
+  it("onEventClick est défini pour un VEILLEUR", async () => {
+    mockAuth(veilleur, UserRole.VEILLEUR);
+    mockPlanning({ content: [entry("e1", veilleur.id)], page: 0, size: 20, totalElements: 1, totalPages: 1, last: true });
+    mockCreateBooking();
+    mockCancelBooking();
+
+    render(<PageAgenda />);
+
+    await screen.findByTestId("calendrier-stub");
+    expect(screen.getByTestId("clickable")).toHaveTextContent("true");
   });
 });

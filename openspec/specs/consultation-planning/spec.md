@@ -60,9 +60,9 @@ type PlanningPeriode =
   ci-dessous) : bascule vers `listWeek` (liste chronologique) au lieu de `timeGridWeek`.
 - Affichage des créneaux : heure affichée = `arg.timeText` (début seul), comme en vue "Jour" — voir
   "Affichage des créneaux" ci-dessous.
-- Hors périmètre : le surlignage "tous les créneaux réservés" (gold) n'est pas étendu à cette vue,
-  scopé explicitement à la vue Mois (cf. "Affichage des créneaux"). Le surlignage "Ma réservation"
-  n'est pas scopé par vue et s'applique normalement.
+- Surlignage de tous les créneaux réservés (gold) : étendu à cette vue, `user-app` uniquement (cf.
+  "Affichage des créneaux" → "Surlignage de tous les créneaux réservés"). Le surlignage "Ma
+  réservation" n'est pas scopé par vue et s'applique normalement.
 
 ### Mode Mois
 - Contrôle : sélecteur `react-datepicker` (`showMonthYearPicker`, locale française via
@@ -197,7 +197,9 @@ Hors périmètre) THEN le créneau est surligné visuellement : fond `gold-100`/
 uniquement par `apps/user-app/src/index.css`), en complément du badge texte « Ma réservation »
 existant (la couleur seule ne suffit pas comme signal d'accessibilité — WCAG 1.4.1).
 
-### Surlignage de tous les créneaux réservés en vue Mois (`user-app` et `admin-app`)
+### Surlignage de tous les créneaux réservés (vues Mois, Jour, Semaine)
+
+#### Vue Mois (`user-app` et `admin-app`)
 
 WHEN le mode est "Mois" (`dayGridMonth`) THEN chaque créneau affiché — quel que soit son propriétaire,
 anonymisé ou non — est encadré visuellement (fond `gold-100`/bordure `gold-400`), pour distinguer au
@@ -209,13 +211,28 @@ Implémentation : règle CSS scopée à la vue (`.fc-dayGridMonth-view .fc-event
 `packages/shared/src/ui/fullcalendar-overrides.css`), s'appuyant sur la classe que FullCalendar pose
 lui-même sur le conteneur de la vue active (`.fc-view.fc-dayGridMonth-view`) — aucune donnée par
 créneau n'est nécessaire, donc aucun changement dans `mapPlanningEntryToEvent`/
-`mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Jamais actif en vue "Jour"
-(`fc-timeGridDay-view`), "Semaine" (`fc-timeGridWeek-view`) ni "Intervalle" (vue `dayGrid` custom,
-classe de vue différente) : seule la vue Mois est concernée.
+`mapPlanningEntriesToEvents` ni dans `planningEntries.ts`. Jamais actif en vue "Intervalle" (vue
+`dayGrid` custom, classe de vue différente).
 
-Un créneau qui est à la fois "Ma réservation" et affiché en vue Mois cumule les deux règles CSS (même
-déclarations, pas de conflit visuel) ; le badge texte « Ma réservation » reste le seul signal qui
-distingue ce créneau des autres dans cette vue.
+#### Vues Jour et Semaine (`user-app` uniquement)
+
+WHEN le mode est "Jour" (`timeGridDay`) ou "Semaine" (`timeGridWeek` desktop, `listWeek` mobile — cf.
+"Adaptation mobile de l'Agenda") THEN chaque créneau affiché est également encadré visuellement (même
+style `gold-100`/`gold-400`) — extension volontaire du même principe de lisibilité, limitée à
+`user-app` (demande portant explicitement sur « l'espace Veilleur » ; `admin-app`, qui possède
+pourtant les mêmes vues Jour/Semaine via `CalendrierPlanningAdmin.tsx`, n'est pas concerné).
+
+Implémentation : comme les classes de vue FullCalendar (`.fc-timeGridDay-view`,
+`.fc-timeGridWeek-view`, `.fc-listWeek-view`) sont identiques dans les deux apps, les cibler seules
+appliquerait aussi la règle côté `admin-app`. Le scope "user-app uniquement" est donc obtenu via une
+classe marqueur posée côté React — `.user-agenda-calendar`, sur le conteneur racine de
+`CalendrierReservations.tsx` (jamais posée côté `admin-app`) — combinée en CSS avec les classes de
+vue ci-dessus (`packages/shared/src/ui/fullcalendar-overrides.css`), même idiome que le scope déjà en
+place pour "Ma réservation" (`.planning-event--mine`, jamais posée côté `admin-app` non plus).
+
+Un créneau qui est à la fois "Ma réservation" et couvert par l'une de ces règles (Mois, Jour ou
+Semaine) cumule les deux règles CSS (mêmes déclarations, pas de conflit visuel) ; le badge texte « Ma
+réservation » reste le seul signal propre à l'utilisateur connecté dans ces vues.
 
 ## Hors périmètre de cette spec
 
