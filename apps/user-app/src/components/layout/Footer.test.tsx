@@ -126,4 +126,25 @@ describe("components/layout/Footer (user-app)", () => {
     expect(gridContainer).toHaveClass("lg:grid-cols-3");
     expect(gridContainer).not.toHaveClass("lg:grid-cols-4");
   });
+
+  it("affiche l'adresse email de contact réelle de la Chapelle du Vœux", () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      role: null,
+      isAuthenticated: false,
+      isHydrated: true,
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("adorationtourcoing@gmail.com")).toBeInTheDocument();
+    expect(screen.queryByText("contact@sacrecoeur-sanctuaire.fr")).not.toBeInTheDocument();
+  });
 });

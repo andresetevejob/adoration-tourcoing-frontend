@@ -37,6 +37,13 @@ describe("pages/PageContact (user-app)", () => {
     expect(screen.getByLabelText("Nom")).toBeInTheDocument();
   });
 
+  it("affiche l'adresse email de contact réelle de la Chapelle du Vœux", () => {
+    renderPage();
+
+    expect(screen.getByText("adorationtourcoing@gmail.com")).toBeInTheDocument();
+    expect(screen.queryByText("contact@sacrecoeur-sanctuaire.fr")).not.toBeInTheDocument();
+  });
+
   it("bascule vers la confirmation avec le nom soumis après un envoi réussi", async () => {
     renderPage();
 

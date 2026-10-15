@@ -121,7 +121,7 @@ export function Footer() {
               <p>18 Rue Faidherbe</p>
               <p>59200 Tourcoing, France</p>
               <p className="text-ivory/60 mt-2">+33 1 53 41 89 00</p>
-              <p className="text-ivory/60">contact@sacrecoeur-sanctuaire.fr</p>
+              <p className="text-ivory/60">adorationtourcoing@gmail.com</p>
             </div>
             <div className="flex gap-3 mt-6">
               {socialLinks.map((social) => (

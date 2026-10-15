@@ -56,7 +56,7 @@ const INFOS = [
       </svg>
     ),
     title: "Email",
-    lines: ["contact@sacrecoeur-sanctuaire.fr"],
+    lines: ["adorationtourcoing@gmail.com"],
   },
   {
     icon: (
