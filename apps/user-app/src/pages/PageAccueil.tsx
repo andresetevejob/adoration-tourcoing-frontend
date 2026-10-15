@@ -143,7 +143,8 @@ export default function PageAccueil() {
         </div>
       </section>
 
-      {/* STATS BAR */}
+      {/* STATS BAR - masquée temporairement (chiffres placeholders à remplacer avant réactivation) */}
+      {/*
       <section className="relative bg-gradient-to-r from-night-900 via-night-950 to-night-900 border-y border-gold-500/10">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4 text-center">
@@ -163,6 +164,7 @@ export default function PageAccueil() {
           </div>
         </div>
       </section>
+      */}
 
       {/* PRESENTATION */}
       <section className="relative py-24 lg:py-32 bg-ivory">

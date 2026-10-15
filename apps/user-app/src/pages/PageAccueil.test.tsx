@@ -73,4 +73,13 @@ describe("pages/PageAccueil (user-app)", () => {
     expect(screen.getByText(/Marie L\./)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Horaires & Visites" })).toBeInTheDocument();
   });
+
+  it("ne rend pas la section STATS BAR (masquée temporairement, chiffres placeholders)", () => {
+    renderPage();
+
+    expect(screen.queryByText("Années d'adoration")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ouvert toute l'année")).not.toBeInTheDocument();
+    expect(screen.queryByText("Présence ininterrompue")).not.toBeInTheDocument();
+    expect(screen.queryByText("Visiteurs par an")).not.toBeInTheDocument();
+  });
 });
