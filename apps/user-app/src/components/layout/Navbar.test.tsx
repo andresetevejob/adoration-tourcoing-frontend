@@ -1,10 +1,19 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router";
 import { Navbar } from "./Navbar";
 import { useAuth } from "../../hooks/useAuth";
 
 vi.mock("../../hooks/useAuth");
+
+/** `Navbar` rend `AuthNav`, qui appelle `useUserPhoto` (donc `useQuery`) : nécessite un
+ *  `QueryClientProvider` ancêtre, même pattern que `AuthNav.test.tsx`. */
+function renderWithQueryClient(ui: ReactElement) {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 function mockUnauthenticated(): void {
   vi.mocked(useAuth).mockReturnValue({
@@ -30,7 +39,7 @@ describe("components/layout/Navbar (user-app)", () => {
       logout: vi.fn(),
     });
 
-    render(
+    renderWithQueryClient(
       <MemoryRouter>
         <Navbar />
       </MemoryRouter>,
@@ -55,7 +64,7 @@ describe("components/layout/Navbar (user-app)", () => {
       logout: vi.fn(),
     });
 
-    render(
+    renderWithQueryClient(
       <MemoryRouter>
         <Navbar />
       </MemoryRouter>,
@@ -69,7 +78,7 @@ describe("components/layout/Navbar (user-app)", () => {
     it("n'affiche pas le drawer au rendu initial (aria-expanded=false, pas de dialog)", () => {
       mockUnauthenticated();
 
-      render(
+      renderWithQueryClient(
         <MemoryRouter>
           <Navbar />
         </MemoryRouter>,
@@ -83,7 +92,7 @@ describe("components/layout/Navbar (user-app)", () => {
     it("ouvre le drawer au clic sur le bouton hamburger (aria-expanded=true, dialog visible)", () => {
       mockUnauthenticated();
 
-      render(
+      renderWithQueryClient(
         <MemoryRouter>
           <Navbar />
         </MemoryRouter>,
@@ -101,7 +110,7 @@ describe("components/layout/Navbar (user-app)", () => {
     it("ferme le drawer au clic sur un lien du drawer", () => {
       mockUnauthenticated();
 
-      render(
+      renderWithQueryClient(
         <MemoryRouter>
           <Navbar />
         </MemoryRouter>,
@@ -118,7 +127,7 @@ describe("components/layout/Navbar (user-app)", () => {
     it("ferme le drawer à la touche Échap", () => {
       mockUnauthenticated();
 
-      render(
+      renderWithQueryClient(
         <MemoryRouter>
           <Navbar />
         </MemoryRouter>,

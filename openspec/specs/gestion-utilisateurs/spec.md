@@ -55,8 +55,9 @@ que `statut-adoration-en-direct` pour un contenu secondaire non bloquant.
 ### Hors périmètre
 - Édition/remplacement de la photo depuis cette page (`UserForm` mode `edit` ne modifie pas
   `photo`) — lecture seule.
-- "Mon compte" (`ProfileCard`, user-app) et liste des utilisateurs (`UserTable`) : pas de photo
-  affichée à ces endroits.
+- `ProfileCard` (page `/mon-compte` elle-même) et liste des utilisateurs (`UserTable`) : pas de
+  photo affichée à ces endroits. La navbar (`AuthNav`, lien « Mon compte ») affiche en revanche une
+  miniature — voir section dédiée ci-dessous.
 
 ### Limitation connue (documentée, non bloquante)
 `useUserPhoto` ne revérifie pas explicitement `hasPhoto` dans la dépendance de son `useEffect`
@@ -76,12 +77,15 @@ récupérée et affichée dans `ReservationCard` (miniature circulaire ~96px, m�
 `UserProfile.tsx` ci-dessus), selon le même principe de dégradation silencieuse que la fiche admin
 (aucune photo récupérable ⇒ bloc simplement absent, aucun message d'erreur).
 
-Contrairement à la fiche admin, l'appel `GET /users/{id}/photo` est **toujours tenté** côté user-app
-(`getUserPhoto`/`useUserPhoto`, `apps/user-app/src/{api/endpoints/users.ts,hooks/useUserPhoto.ts}`,
-miroir de l'implémentation admin-app) : `PlanningEntryResponse` ne porte aucun indicateur `hasPhoto`
-(contrairement à `UserResponse.photo`) permettant de court-circuiter l'appel à l'avance. `retry:
-false` (plutôt que le comportement par défaut de TanStack Query) : une absence de photo (404) y est
-une issue courante, pas une anomalie réseau transitoire.
+Contrairement à la fiche admin, l'appel `GET /users/{id}/photo` est **toujours tenté** pour ces deux
+appelants (`getUserPhoto`/`useUserPhoto`, `apps/user-app/src/{api/endpoints/users.ts,hooks/
+useUserPhoto.ts}`, miroir de l'implémentation admin-app) : `PlanningEntryResponse` ne porte aucun
+indicateur `hasPhoto` (contrairement à `UserResponse.photo`) permettant de court-circuiter l'appel à
+l'avance — `useUserPhoto` (user-app) expose bien un second paramètre optionnel `hasPhoto` (défaut
+`true`, cf. section navbar ci-dessous pour l'appelant qui le renseigne explicitement), mais ces deux
+appelants agenda ne le passent jamais et comptent sur ce défaut. `retry: false` (plutôt que le
+comportement par défaut de TanStack Query) : une absence de photo (404) y est une issue courante,
+pas une anomalie réseau transitoire.
 
 `getUserPhoto` (user-app) passe `skipForbiddenRedirect: true` à `apiClient.getBlob` — différence
 volontaire avec l'équivalent admin-app : sans cette option, un 403 (cf. limitation ci-dessous)
@@ -100,3 +104,27 @@ autre Veilleur — seul son nom est visible** (`ReservationDetailModal` reste pl
 sans la photo). Pour sa propre réservation (`ReservationConfirmModal`, variant `cancel`), la photo
 s'affiche normalement (titulaire = utilisateur connecté, cas déjà autorisé). À lever si/quand
 l'autorisation backend est confirmée ou élargie.
+
+## Affichage de la photo dans la navbar (`AuthNav`, user-app)
+
+WHEN un utilisateur connecté a une photo (`user.photo !== null` — par construction, seuls les
+comptes VEILLEUR en ont une) THEN une miniature circulaire (32px, `h-8 w-8 rounded-full
+object-cover`) est affichée à côté du lien « Mon compte » dans la barre de navigation
+(`AuthNav.tsx`), avant le texte. `AuthNav` est partagé sans duplication entre `Navbar` (desktop) et
+`MobileDrawer` (mobile) : aucun changement séparé n'a été nécessaire pour le menu mobile.
+
+`alt=""` (décoratif) : le texte visible « Mon compte » porte déjà le sens du lien, contrairement
+aux autres emplacements de cette spec où la photo identifie un tiers (bénéficiaire d'une
+réservation, utilisateur consulté sur une fiche) et doit donc porter un texte alternatif nommant
+cette personne.
+
+Contrairement à l'agenda (section ci-dessus), `UserResponse.photo` porte un indicateur de présence
+pour cet appelant : `useUserPhoto(user?.id ?? "", Boolean(user?.photo))` est appelé avec `hasPhoto`
+explicite, évitant tout appel réseau pour un utilisateur sans photo ou non connecté — même
+mécanisme que l'équivalent admin-app (`enabled: hasPhoto`). Le hook est appelé avant tout retour
+conditionnel du composant (règle des Hooks React : `AuthNav` affiche un contenu différent selon
+`isAuthenticated`, mais le hook s'exécute dans tous les cas).
+
+Dégradation silencieuse identique aux autres emplacements de cette spec : en cas d'échec (403/404/
+réseau), la miniature est simplement absente, le lien « Mon compte » reste pleinement
+fonctionnel — aucun message d'erreur.

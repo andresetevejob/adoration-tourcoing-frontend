@@ -8,30 +8,33 @@ import { getUserPhoto } from "../api/endpoints/users";
  * changement de référence du `Blob` — voir le commentaire original pour le détail du
  * raisonnement, notamment le piège "revisite A→B→A").
  *
- * Deux différences volontaires avec la version admin-app :
- * 1. Pas de paramètre `hasPhoto`/`enabled` : `PlanningEntryResponse` ne porte aucun
- *    indicateur de présence de photo (contrairement à `UserResponse.photo`), donc rien ne
- *    permet de décider à l'avance s'il faut appeler l'API — l'appel est toujours tenté.
- * 2. `retry: false` : un 404 (pas de photo) est ici une issue COURANTE, pas une anomalie
- *    réseau transitoire (à la différence de l'appel admin-app, gardé par `hasPhoto` donc
- *    sensé réussir) — retenter 3 fois une absence de photo attendue serait un gaspillage
- *    réseau systématique. Un 403 (cf. `getUserPhoto`, "Point de vigilance backend") n'est pas
- *    plus retenté non plus : un nouvel essai échouerait identiquement.
+ * `hasPhoto` (optionnel, défaut `true`) : garde réseau optionnelle, cf. équivalent
+ * admin-app (`enabled: hasPhoto`, paramètre obligatoire là-bas car `UserResponse.photo`
+ * porte toujours un indicateur de présence pour ses appelants). Côté user-app, deux
+ * familles d'appelants coexistent :
+ * 1. Agenda (`ReservationConfirmModal`, `ReservationDetailModal`) : `PlanningEntryResponse`
+ *    ne porte AUCUN indicateur de présence de photo — ces appelants n'ont rien à passer et
+ *    comptent sur le défaut `true` (comportement inchangé : appel toujours tenté).
+ * 2. `AuthNav` (navbar) : `UserResponse.photo` porte bien un indicateur de présence —
+ *    `hasPhoto` y est passé explicitement (`Boolean(user?.photo)`) pour éviter tout appel
+ *    réseau pour un Adorateur ou un Veilleur sans photo.
+ *
+ * `retry: false` : un 404 (pas de photo) est une issue COURANTE pour l'appelant agenda
+ * (non gardé), pas une anomalie réseau transitoire. Conservé inconditionnellement même
+ * quand `hasPhoto` est explicite (navbar) : un échec (403/réseau) n'y est pas plus une
+ * anomalie transitoire à retenter.
  *
  * Dégradation silencieuse : ce hook ne lit/n'expose jamais `query.error` à ses appelants de
- * façon particulière — `query.isError` est bien calculé par `useQuery` (toujours accessible
- * via les champs spreadés de `UseQueryResult` si un futur appelant en avait besoin), mais
- * aucun composant de cette proposition (`ReservationCard`, `ReservationConfirmModal`,
- * `ReservationDetailModal`) ne le lit : en cas d'erreur, `query.data` reste `undefined`,
- * donc `photoUrl` aussi — le bloc photo est simplement absent, sans message d'erreur, par
- * construction plutôt que par un `catch` explicite.
+ * façon particulière — en cas d'erreur ou de `hasPhoto` à `false`, `data` reste `undefined`.
  */
 export function useUserPhoto(
   userId: string,
+  hasPhoto = true,
 ): Omit<UseQueryResult<Blob>, "data"> & { data: string | undefined } {
   const query = useQuery({
     queryKey: ["users", "photo", userId],
     queryFn: () => getUserPhoto(userId),
+    enabled: hasPhoto,
     retry: false,
   });
 

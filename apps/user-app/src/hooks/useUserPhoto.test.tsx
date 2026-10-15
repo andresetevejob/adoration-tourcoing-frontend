@@ -109,6 +109,18 @@ describe("hooks/useUserPhoto (user-app)", () => {
     expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
+  it("hasPhoto = false : n'appelle jamais getUserPhoto (enabled: false) et data reste undefined sans jamais passer par isLoading/isError", () => {
+    const { result } = renderHook(() => useUserPhoto("u1", false), { wrapper });
+
+    // Pas de `waitFor` sur une transition d'état : la requête est désactivée, il n'y a
+    // rien à attendre — on vérifie l'état stable immédiatement après le rendu.
+    expect(getUserPhoto).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isError).toBe(false);
+    expect(result.current.data).toBeUndefined();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
   it("ne lit/n'expose jamais query.error de façon particulière aux appelants : seul `data` conditionne l'affichage (dégradation silencieuse par construction)", async () => {
     const error = new Error("403 Forbidden");
     vi.mocked(getUserPhoto).mockRejectedValueOnce(error);
